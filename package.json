@@ -22,7 +22,11 @@
     "cli",
     "travel"
   ],
-  "author": "",
+  "author": "leeabc",
+  "contributors": [
+    "leeabc",
+    "emilyorz"
+  ],
   "license": "ISC",
   "bugs": {
     "url": "https://github.com/emilyorz/flyfar/issues"
