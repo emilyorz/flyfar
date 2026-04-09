@@ -1,7 +1,7 @@
 {
   "name": "flyfar",
   "version": "1.0.0",
-  "description": "Flight search CLI — fly far, pay less.",
+  "description": "FlyFar (飛太遠) — Flight search CLI. Fly far, pay less.",
   "type": "module",
   "main": "dist/cli.js",
   "bin": {
@@ -22,10 +22,10 @@
     "cli",
     "travel"
   ],
-  "author": "leeabc",
+  "author": "Sam Lee <leeabc>",
   "contributors": [
-    "leeabc",
-    "emilyorz"
+    "Sam Lee <leeabc>",
+    "Emily <emilyorz>"
   ],
   "license": "ISC",
   "bugs": {

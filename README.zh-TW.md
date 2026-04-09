@@ -1,6 +1,6 @@
-# flyfar
+# FlyFar (飛太遠)
 
-航班搜尋 CLI — 飛得遠，花得少。
+航班搜尋 CLI — 飛得遠，花得少。By Sam Lee / Emily。
 
 從終端機查詢 Google Flights。人類看彩色表格，AI 看結構化 JSON。
 

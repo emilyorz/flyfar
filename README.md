@@ -1,6 +1,6 @@
-# flyfar
+# FlyFar (飛太遠)
 
-Flight search CLI — fly far, pay less.
+Flight search CLI — fly far, pay less. By Sam Lee / Emily.
 
 Query Google Flights from the terminal. Outputs colored tables for humans, structured JSON for AI agents.
 
