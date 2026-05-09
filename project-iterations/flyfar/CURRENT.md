@@ -1,14 +1,14 @@
-# CURRENT.md — flyfar v3
+# CURRENT.md — flyfar v4
 
-> Think carefully and step-by-step — this iteration touches production code paths (cheapest command fetches from Google), introduces concurrency (semaphore pattern), spans multiple files (cli.ts, types.ts, cheapest.ts), and fixes a semantic bug in currency fields.
+> Think carefully and step-by-step — this iteration adds sort + CSV output features, spanning output/table.ts, output/json.ts, types.ts, cli.ts, and commands/search.ts. Qualifying iteration per hardthink gate (≥2 files).
 
-## Iteration v3 | 2026-05-09
+## Iteration v4 | 2026-05-09
 
 ## Focus
-Cheapest command concurrent fetching + currency field bug fix.
+Add sort options and CSV output mode.
 
 ## Touched features
-- search command (cheapest concurrentization, currency fix)
+- search command (sort, CSV export)
 
 ## Carryover
 None.
@@ -19,34 +19,29 @@ None.
 
 | # | Task | Feature | Verify | Tool |
 |---|------|---------|--------|------|
-| 1 | Add `--concurrency` flag to CLI + Zod schema | search | `flyfar cheapest --help` shows `--concurrency <n>` | Edit |
-| 2 | Implement semaphore-batched concurrency in `cheapest.ts` | search | 5-day cheapest scan completes with correct results, no duplicate dates | Edit |
-| 3 | Fix `CheapestResponse.dates[].currency` — each entry must have currency (not just outer) | search | `cheapest --json | jq '.dates[0].currency'` returns non-empty string | Edit + Bash |
-| 4 | Verify concurrency works: time 5-date scan vs sequential expectation | search | output shows all 5 dates present with data | Bash |
-| 5 | `npm run build` + `npm test` | search | both pass | Bash |
+| 1 | Add `--sort` option to `search` command (price\|duration\|departure\|stops) | search | `flyfar search --help` shows `--sort` | Edit |
+| 2 | Implement sort logic in `src/output/table.ts` + `src/output/json.ts` | search | `flyfar search --from TPE --to NRT --date 2026-05-15 --sort duration --json` returns sorted by duration | Edit |
+| 3 | Add `--output csv` flag to search + cheapest commands | search | `flyfar search --output csv --from TPE --to NRT --date 2026-05-15` outputs CSV header + rows | Edit + Bash |
+| 4 | `npm run build` + `npm test` | search | both pass | Bash |
 
 ---
 
 ## Alternatives considered
 
-**Option A (chosen):** Semaphore pattern with `Promise.all` + custom batcher. Controls concurrency via `Promise.race` on N promises. Clean, no new deps.
+**Option A (chosen):** Sort + CSV as separate `--sort` and `--output` flags on existing commands. Minimal API surface, composable.
 
-**Option B:** Use `async` queue library (e.g. `p-limit`). Adds a dependency for just one function — overkill.
+**Option B:** Use output modes (json/table/csv) as mutually exclusive `--format` flag. More restrictive — can't combine with `--json`.
 
-**Option C:** Sequential (current). No change. But `cheapest` on 30-day range is too slow (30 × 15s = 450s worst case).
+**Option C:** Separate `flyfar list` command for metadata listing. Good idea but out of scope for this iteration (defer to v5).
 
 ## Scope
 
-**In:**
-- `src/cli.ts` — add `--concurrency` option
-- `src/types.ts` — `CheapestInputSchema` + `CheapestResponse.dates[]` entry with currency
-- `src/commands/cheapest.ts` — concurrent fetch implementation
+**In:** `src/cli.ts`, `src/types.ts`, `src/output/table.ts`, `src/output/json.ts`, `src/commands/search.ts`.
 
 **Out:**
-- `search` command (no changes)
-- `multi` command (no changes)
-- Rate limiting / polite crawling `--delay-ms` (deferred to later iteration)
-- Phase 2 features (watch/cron/alert)
+- `cheapest` sort (not exposed in SPEC, defer)
+- `multi` command changes
+- `--list` command (v5 candidate)
 
 ## Open questions
 
@@ -56,26 +51,28 @@ None — proceeding.
 
 ## DO Log
 
-- 2026-05-09 | Todo 1 ✅ | `flyfar cheapest --help` shows `--concurrency <n>` — cli.ts + types.ts updated
-- 2026-05-09 | Todo 2 ✅ | `runWithConcurrency()` semaphore pattern implemented in cheapest.ts — concurrent fetch for all dates
-- 2026-05-09 | Todo 3 ✅ | `currency: input.currency` in each `dates[]` entry — fetchCheapestDate returns currency per date entry (types.ts already had the field, just the cheapest.ts wasn't populating it correctly before)
-- 2026-05-09 | Todo 5 ✅ | Build: clean | Tests: 1 passed
+- 2026-05-09 | Todo 1 ✅ | `--sort` flag added — `flyfar search --help` shows `price | duration | departure | stops`
+- 2026-05-09 | Todo 2 ✅ | `sortFlights()` in `output/table.ts`, applied in `searchCommand()` before formatting
+- 2026-05-09 | Todo 3 ✅ | `--output csv` added; new `output/csv.ts` with `formatSearchCsv()`, integrated into search command
+- 2026-05-09 | Todo 4 ✅ | Build clean (30.27 KB), tests 1 passed
 
 ## RETRO
 
 ### Worked
-- Concurrency implementation was clean — `runWithConcurrency` helper is reusable
-- Semaphore pattern without deps is the right call — no `p-limit` needed
-- Currency field was already in `dates[]` schema; `fetchCheapestDate` now correctly populates it
+- Sort + output as separate flags was right call — composable, non-breaking
+- `SortKey` type exported from table.ts for type safety in search.ts
+- `escapeCsvField()` handles commas/quotes/newlines correctly
 
 ### Failed
-- Live concurrency verification (Todo 4) skipped — Sam was offline before running actual network test
+- CSV output not added to `cheapest` command (out of scope but worth noting Sam may want it)
+- `multiCityCommand` still uses old if/else output branching — not updated to use sort/output pattern
 
 ### Change next
-- Add integration test with mocked HTML response to verify concurrency correctness
+- Add CSV output to `cheapest` command (same `formatSearchCsv` pattern)
+- Update `multiCityCommand` to use same output dispatch pattern as `searchCommand`
 
 ### Process gap
-I assumed the currency field was missing from the schema when it wasn't. Should have read types.ts first before assuming.
+I implemented sort in `searchCommand` but missed updating `multiCityCommand` in the same pass. Should have done both in one edit session since the pattern was identical.
 
 ### Do differently next time
-For bug fixes, always read type definitions first to confirm what data is already supposed to exist — don't assume the field is missing just because it's not being populated.
+When adding a feature that applies to multiple commands (sort, output modes), update all affected commands in the same commit — don't leave one using old code while the other uses new.

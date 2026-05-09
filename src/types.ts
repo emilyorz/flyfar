@@ -13,6 +13,8 @@ export const SearchInputSchema = z.object({
   airline: z.array(z.string()).optional(),
   seat: z.enum(["economy", "premium-economy", "business", "first"]).default("economy"),
   passengers: z.number().int().min(1).max(9).default(1),
+  sort: z.enum(["price", "duration", "departure", "stops"]).default("price"),
+  output: z.enum(["table", "json", "csv"]).default("table"),
   json: z.boolean().default(false),
   language: z.string().default("en-US"),
   currency: z.string().default("TWD"),

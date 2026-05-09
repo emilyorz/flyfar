@@ -4,7 +4,9 @@ import { buildTfsParam, type FlightLeg, type QueryParams } from "../core/query.j
 import { fetchFlightsHtml } from "../core/fetch.js";
 import { parseFlightsHtml, ParseError } from "../core/parse.js";
 import { formatJson } from "../output/json.js";
-import { formatSearchTable } from "../output/table.js";
+import { formatSearchTable, sortFlights } from "../output/table.js";
+import { formatSearchCsv } from "../output/csv.js";
+import type { SortKey } from "../output/table.js";
 import type { TripType } from "../types.js";
 
 export async function searchCommand(input: SearchInput): Promise<void> {
@@ -70,10 +72,15 @@ export async function searchCommand(input: SearchInput): Promise<void> {
     input.currency
   );
 
-  if (input.json) {
-    process.stdout.write(formatJson(response) + "\n");
+  const sorted = sortFlights(response.flights, input.sort as SortKey);
+  const sortedResponse = { ...response, flights: sorted };
+
+  if (input.output === "csv") {
+    process.stdout.write(formatSearchCsv(sortedResponse) + "\n");
+  } else if (input.json || input.output === "json") {
+    process.stdout.write(formatJson(sortedResponse) + "\n");
   } else {
-    process.stdout.write(formatSearchTable(response) + "\n");
+    process.stdout.write(formatSearchTable(sortedResponse) + "\n");
   }
 
   // Exit code: 0 = flights found, 1 = no flights

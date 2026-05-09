@@ -2,6 +2,8 @@ import chalk from "chalk";
 import Table from "cli-table3";
 import type { SearchResponse, FlightResult, CheapestResponse } from "../types.js";
 
+export type SortKey = "price" | "duration" | "departure" | "stops";
+
 function formatDuration(minutes: number): string {
   const hours = Math.floor(minutes / 60);
   const mins = minutes % 60;
@@ -99,6 +101,26 @@ export function formatSearchTable(response: SearchResponse): string {
   lines.push("");
 
   return lines.join("\n");
+}
+
+export function sortFlights(flights: FlightResult[], key: SortKey): FlightResult[] {
+  return [...flights].sort((a, b) => {
+    switch (key) {
+      case "price":
+        return a.price.amount - b.price.amount;
+      case "duration":
+        return a.durationMinutes - b.durationMinutes;
+      case "departure": {
+        const aTime = a.segments[0]?.departure.time ?? "";
+        const bTime = b.segments[0]?.departure.time ?? "";
+        return aTime.localeCompare(bTime);
+      }
+      case "stops":
+        return a.stops - b.stops;
+      default:
+        return 0;
+    }
+  });
 }
 
 export function formatCheapestTable(response: CheapestResponse): string {
