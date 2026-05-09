@@ -93,6 +93,7 @@ program
     }
   )
   .option("--stay <days>", "Stay duration in days (adds return leg)")
+  .option("--concurrency <n>", "Max concurrent requests (1-10)", "5")
   .option("--json", "Output as JSON", false)
   .option("--language <code>", "Language code", "en-US")
   .option("--currency <code>", "Currency code", "TWD")
@@ -109,6 +110,7 @@ program
         rangeStart: range[0],
         rangeEnd: range[1],
         stay: opts.stay ? Number(opts.stay) : undefined,
+        concurrency: Number(opts.concurrency),
       });
       await cheapestCommand(input);
     } catch (error) {

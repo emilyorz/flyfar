@@ -3,17 +3,17 @@
 > Last updated: 2026-05-09
 
 ## Active iteration
-- **v1** — `CURRENT.md` (initial setup)
+- **v3** — `CURRENT.md` (cheapest concurrency + currency fix, in progress)
 
 ## Iteration pointer
 ```
-v1 (current) ← YOU ARE HERE
+v1 (archived) → v2 (archived) → v3 (current) ← YOU ARE HERE
 ```
 
 ## Features
 | Feature | Status | Last touch |
 |---------|--------|------------|
-| search command | active | v1 |
+| search command | active | v3 (cheapest enhancement) |
 
 ## Active Parks
 None yet.

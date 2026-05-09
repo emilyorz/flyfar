@@ -40,6 +40,7 @@ export const CheapestInputSchema = z.object({
   rangeStart: z.string().regex(dateRegex),
   rangeEnd: z.string().regex(dateRegex),
   stay: z.number().int().min(1).optional(),
+  concurrency: z.number().int().min(1).max(10).default(5),
   json: z.boolean().default(false),
   language: z.string().default("en-US"),
   currency: z.string().default("TWD"),
