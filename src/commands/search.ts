@@ -8,6 +8,7 @@ import { formatSearchTable, sortFlights, formatRecommendTable } from "../output/
 import { formatSearchCsv } from "../output/csv.js";
 import type { SortKey } from "../output/table.js";
 import type { TripType } from "../types.js";
+import { spawn } from "child_process";
 
 export async function searchCommand(input: SearchInput): Promise<void> {
   const legs: FlightLeg[] = [];
@@ -125,6 +126,12 @@ export async function searchCommand(input: SearchInput): Promise<void> {
     process.stdout.write(formatJson(sortedResponse) + "\n");
   } else {
     process.stdout.write(formatSearchTable(sortedResponse) + "\n");
+  }
+
+  // Open in browser if --open flag is set
+  if (input.open && deepLink) {
+    const openCmd = process.platform === "darwin" ? "open" : "xdg-open";
+    spawn(openCmd, [deepLink], { stdio: "ignore", detached: true });
   }
 
   // Exit code: 0 = flights found, 1 = no flights

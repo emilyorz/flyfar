@@ -15,6 +15,7 @@ export const SearchInputSchema = z.object({
   passengers: z.number().int().min(1).max(9).default(1),
   sort: z.enum(["price", "duration", "departure", "stops"]).default("price"),
   recommend: z.boolean().default(false),
+  open: z.boolean().default(false),
   output: z.enum(["table", "json", "csv"]).default("table"),
   json: z.boolean().default(false),
   language: z.string().default("en-US"),
