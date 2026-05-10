@@ -15,11 +15,12 @@ function formatDuration(minutes: number): string {
   return `${hours}h ${mins}m`;
 }
 
-function flightToCsvRow(flight: FlightResult, idx: number): string {
+function flightToCsvRow(flight: FlightResult, idx: number, legLabel = ""): string {
   const seg = flight.segments[0];
   const lastSeg = flight.segments[flight.segments.length - 1];
   const fields = [
     String(idx + 1),
+    legLabel,
     flight.airlines.join("; "),
     flight.type,
     seg ? seg.departure.time : "",
@@ -44,6 +45,7 @@ export function formatSearchCsv(response: SearchResponse): string {
 
   const header = [
     "num",
+    "leg",
     "airlines",
     "flight_number",
     "departure_time",
@@ -61,7 +63,13 @@ export function formatSearchCsv(response: SearchResponse): string {
   lines.push(header);
 
   flights.forEach((flight, i) => {
-    lines.push(flightToCsvRow(flight, i));
+    const firstSeg = flight.segments[0];
+    let legLabel = "";
+    if (query.returnDate && firstSeg?.departure.time) {
+      const segDate = firstSeg.departure.time.split(" ")[0];
+      legLabel = segDate === query.returnDate ? "Leg 2" : "Leg 1";
+    }
+    lines.push(flightToCsvRow(flight, i, legLabel));
   });
 
   return lines.join("\n");

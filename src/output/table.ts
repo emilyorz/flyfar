@@ -52,6 +52,7 @@ export function formatSearchTable(response: SearchResponse): string {
 
   const table = new Table({
     head: [
+      chalk.bold("Leg"),
       chalk.bold("Airlines"),
       chalk.bold("Depart"),
       chalk.bold("Arrive"),
@@ -60,7 +61,7 @@ export function formatSearchTable(response: SearchResponse): string {
       chalk.bold("Price"),
     ],
     style: { head: [], border: ["gray"] },
-    colWidths: [18, 14, 14, 12, 10, 14],
+    colWidths: [8, 18, 14, 14, 12, 10, 14],
   });
 
   for (const flight of flights) {
@@ -69,7 +70,15 @@ export function formatSearchTable(response: SearchResponse): string {
 
     if (!firstSeg || !lastSeg) continue;
 
+    // Determine leg annotation for round-trip
+    let legLabel = "";
+    if (query.returnDate && firstSeg.departure.time) {
+      const segDate = firstSeg.departure.time.split(" ")[0];
+      legLabel = segDate === query.returnDate ? "Leg 2" : "Leg 1";
+    }
+
     table.push([
+      legLabel,
       flight.airlines.join(", ").substring(0, 16),
       `${firstSeg.departure.time}\n${firstSeg.fromAirport.code}`,
       `${lastSeg.arrival.time}\n${lastSeg.toAirport.code}`,
@@ -121,6 +130,13 @@ export function sortFlights(flights: FlightResult[], key: SortKey): FlightResult
         return 0;
     }
   });
+}
+
+export function formatRecommendTable(flight: FlightResult, score: number): string {
+  const firstSeg = flight.segments[0];
+  const lastSeg = flight.segments[flight.segments.length - 1];
+  const stopsStr = flight.stops === 0 ? "Direct" : `${flight.stops} stop${flight.stops > 1 ? "s" : ""}`;
+  return `  ★ Best: ${flight.airlines.join(", ")} $${flight.price.amount.toLocaleString()} — ${firstSeg?.departure.time}→${lastSeg?.arrival.time} ${stopsStr} (score: ${score.toFixed(2)})`;
 }
 
 export function formatCheapestTable(response: CheapestResponse): string {

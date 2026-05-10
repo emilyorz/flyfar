@@ -1,26 +1,33 @@
 # CURRENT.md — flyfar v5
 
-> adaptive-thinking: Prioritize responding quickly rather than thinking deeply — iteration rollover, awaiting Sam direction.
+> Think carefully and step-by-step — this iteration spans multiple files and introduces URL encoding logic for flight result links, a ranking/recommendation layer, and multi-city output wiring.
 
-## Iteration v5 | 2026-05-09
+## Iteration v5 | 2026-05-10
 
 ## Focus
-TBD — Sam direction pending.
+Wire multi-city output pipeline (Feature 1), add best-flight recommendation mode (Feature 2), emit Google Flights deep links (Feature 3). Multi-leg 3+ support confirmed not supported by Google backend → Feature 4 dropped.
 
 ## Touched features
-- (none yet)
+- `features/multi-city.md` — full output pipeline wiring + parse validation
+- `features/recommend.md` — new recommendation output mode
+- `features/result-link.md` — new deep link emission
 
 ## Carryover
 None.
 
 ---
 
-## Todo
+## Ack
 
-*(pending Sam direction)*
-
----
+`<!-- ack: 104 -->`
 
 ## DO Log
 
-<!-- ack: none -->
+| When | What | Status |
+|------|------|--------|
+| 2026-05-10 | Enter DO — 3 features (multi-city CSV+table, deep link JSON, --recommend) | DONE |
+| 2026-05-10 | EXPLORE phase + report | DONE |
+| 2026-05-10 | VERIFY-B quality check — found 2 P0 | DONE |
+| 2026-05-10 | P0 fixes: csv.ts Leg column, search.ts indexOf bug | DONE |
+| 2026-05-10 | Build verification | DONE |
+| 2026-05-10 | RETRO written | DONE |

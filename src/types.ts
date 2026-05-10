@@ -14,6 +14,7 @@ export const SearchInputSchema = z.object({
   seat: z.enum(["economy", "premium-economy", "business", "first"]).default("economy"),
   passengers: z.number().int().min(1).max(9).default(1),
   sort: z.enum(["price", "duration", "departure", "stops"]).default("price"),
+  recommend: z.boolean().default(false),
   output: z.enum(["table", "json", "csv"]).default("table"),
   json: z.boolean().default(false),
   language: z.string().default("en-US"),
@@ -85,6 +86,7 @@ export interface SearchResponse {
     returnDate?: string;
   };
   flights: FlightResult[];
+  deepLink?: string;
   metadata: {
     fetchedAt: string;
     source: "google-flights";

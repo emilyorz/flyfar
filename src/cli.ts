@@ -33,6 +33,7 @@ program
   )
   .option("--passengers <n>", "Number of adult passengers", "1")
   .option("--sort <key>", "Sort by: price, duration, departure, stops", "price")
+  .option("--recommend", "Recommend best flight by composite score", false)
   .option("--output <mode>", "Output mode: table, json, csv", "table")
   .option("--json", "Output as JSON (for AI agents)", false)
   .option("--language <code>", "Language code", "en-US")

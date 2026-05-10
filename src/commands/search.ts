@@ -1,10 +1,10 @@
 import type { SearchInput, MultiCityInput } from "../types.js";
 import { resolveAirline } from "../types.js";
-import { buildTfsParam, type FlightLeg, type QueryParams } from "../core/query.js";
+import { buildTfsParam, buildFlightsUrl, type FlightLeg, type QueryParams } from "../core/query.js";
 import { fetchFlightsHtml } from "../core/fetch.js";
 import { parseFlightsHtml, ParseError } from "../core/parse.js";
 import { formatJson } from "../output/json.js";
-import { formatSearchTable, sortFlights } from "../output/table.js";
+import { formatSearchTable, sortFlights, formatRecommendTable } from "../output/table.js";
 import { formatSearchCsv } from "../output/csv.js";
 import type { SortKey } from "../output/table.js";
 import type { TripType } from "../types.js";
@@ -72,10 +72,54 @@ export async function searchCommand(input: SearchInput): Promise<void> {
     input.currency
   );
 
-  const sorted = sortFlights(response.flights, input.sort as SortKey);
-  const sortedResponse = { ...response, flights: sorted };
+  const deepLink = buildFlightsUrl(tfs, input.language, input.currency);
 
-  if (input.output === "csv") {
+  const sorted = sortFlights(response.flights, input.sort as SortKey);
+  const sortedResponse = { ...response, flights: sorted, deepLink };
+
+  if (input.recommend && sorted.length > 0) {
+    const n = sorted.length;
+    // Normalize ranks (0-1, lower rank = better)
+    const priceRank = sorted.map((f) => f.price.amount).filter((p) => p > 0);
+    const durationRank = sorted.map((f) => f.durationMinutes);
+    const stopsRank = sorted.map((f) => f.stops);
+
+    const priceNorm = sorted.map((f, i) => {
+      if (f.price.amount <= 0) return 1;
+      const sortedP = [...priceRank].sort((a, b) => a - b);
+      // Use findIndex on sorted to handle ties by giving the same score
+      return sortedP.findIndex((p) => p === f.price.amount) / (sortedP.length - 1 || 1);
+    });
+    const durationNorm = sorted.map((f) => {
+      const sortedD = [...durationRank].sort((a, b) => a - b);
+      return sortedD.findIndex((d) => d === f.durationMinutes) / (n - 1 || 1);
+    });
+    const stopsNorm = sorted.map((f) => {
+      const sortedS = [...stopsRank].sort((a, b) => a - b);
+      return sortedS.findIndex((s) => s === f.stops) / (n - 1 || 1);
+    });
+
+    let bestIdx = 0;
+    let bestScore = -1;
+    for (let i = 0; i < n; i++) {
+      const score = priceNorm[i] * 0.4 + durationNorm[i] * 0.3 + stopsNorm[i] * 0.3;
+      if (score < bestScore || bestScore < 0) {
+        bestScore = score;
+        bestIdx = i;
+      }
+    }
+    // Tiebreaker: prefer earlier flight when scores are equal
+    let tiedIdx = -1;
+    for (let i = 0; i < n; i++) {
+      const score = priceNorm[i] * 0.4 + durationNorm[i] * 0.3 + stopsNorm[i] * 0.3;
+      if (Math.abs(score - bestScore) < 0.001 && i < bestIdx) {
+        tiedIdx = i;
+      }
+    }
+    if (tiedIdx >= 0) bestIdx = tiedIdx;
+    process.stdout.write(formatSearchTable(sortedResponse) + "\n");
+    process.stdout.write(formatRecommendTable(sorted[bestIdx], 1 - bestScore) + "\n");
+  } else if (input.output === "csv") {
     process.stdout.write(formatSearchCsv(sortedResponse) + "\n");
   } else if (input.json || input.output === "json") {
     process.stdout.write(formatJson(sortedResponse) + "\n");
@@ -143,7 +187,9 @@ export async function multiCityCommand(input: MultiCityInput): Promise<void> {
     input.currency
   );
 
-  if (input.json) {
+  if (input.output === "csv") {
+    process.stdout.write(formatSearchCsv(response) + "\n");
+  } else if (input.json) {
     process.stdout.write(formatJson(response) + "\n");
   } else {
     process.stdout.write(formatSearchTable(response) + "\n");
