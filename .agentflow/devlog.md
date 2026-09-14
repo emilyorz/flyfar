@@ -4,19 +4,19 @@ Project: flyfar
 
 Notebook: .agentflow/devlog.md — root.
 
-Current commit: e3d4d5e3906fcf89ebf5c39e7b55ece1978bbd35（已審查實作；交付紀錄見 Git）.
+Current commit: 8a98600144a2a587a79dd4f06003a1a81a0c65c1.
 
-Tests/scenarios: 22 tests、tsc、build、實際 PTY 三命令通過；真實 search 成功.
+Tests/scenarios: A-003 尚未執行；A-002 驗證保留於既有紀錄.
 
 Configuration: ag.json — schema v7; validated for pi this round.
 
-Proven: 查票解析與 CLI 實際缺陷已修復；獨立審查三項 PASS.
+Proven: 已恢復 A-003 委託並保留既有差異；尚未修改產品.
 
-Open: 既有限制：代理未接線、本文下載未納入逾時；不屬本輪新增功能.
+Open: A-003 工作位置待確認，實作與驗證未開始.
 
-Next: 等待下一個委託.
+Next: 回答 A-003 Questions 的 ans 後續作.
 
-Artifacts: .agentflow/artifacts/A-002-reliability/verification.md；.agentflow/artifacts/A-002-reliability/cross-check.md；.agentflow/artifacts/A-002-reliability/tracker.md.
+Artifacts: none.
 
 Archived eras: none.
 
@@ -153,5 +153,55 @@ Streams: none.
 ---
 
 # → Ask / A-003 (emilyorz)
+
++ Sam 授權用本專案既有 omp + Agentflow 改善查票輸出。目標：1) search 結果呈現完整去程與回程班次，不再只有去程；JSON/CSV/table 契約一致且不破壞既有消費者。2) 行李資訊若 Google Flights 回應有可靠資料，就顯示可驗證的含行李總價或費用；資料拿不到時清楚標示「未含／未知」，禁止猜價。3) cheapest 與一般 search 至少能導向或展開候選的完整來回組合。4) 先凍結 fixture 與失敗測試，再修最小範圍；測試、tsc、build、實際 CLI 與至少一次真實查詢驗證。5) 用獨立 fresh reviewer 審查後才交付。沿用工作區既有差異，不丟棄、不重寫產品、不碰 Agentflow skill、Dashboard、gateway 或其他專案；不可可靠取得行李價格時，交付誠實 UX，不為此阻塞。不要開第二個 coordinator。完成寫 Reply 與證據。
+
+## [RUN-001] Event — 2026-09-15 07:03:15 +0800 (A-003)
+
+- 已恢復 A-003 完整委託；先前問題沒有未處理答案。尚未修改產品、fixture 或測試，也未執行本輪驗證。
+
+- 啟動偵測到既有未提交差異；設定 streams: ask 要求先確認工作位置。保留所有既有差異，等待此決定後再實作。
+
+# ← Reply / A-003
+
+* _2026-09-15 07:03:15 +0800 (host/unknown)_
+
+## [SUMMARY]
+
+- 已恢復改善來回查票與行李資訊的委託；尚未開始實作。現有設定要求先確認是否建立獨立工作區。
+
+## [FINAL REPORT]
+
+1. 完整去回程與相容輸出契約
+
+   - 待執行；保留 JSON／CSV／table 相容要求。
+
+2. 可靠行李資訊
+
+   - 待執行；無可靠價格時明示未知，不猜價。
+
+3. search 與 cheapest 完整組合導向
+
+   - 待執行；未變更既有行為。
+
+4. 失敗案例與實際驗證
+
+   - 尚未執行；先前 A-002 證據不代表本輪通過。既有工作區差異均保留。
+
+5. 獨立審查與交付
+
+   - 尚未交付；工作位置確認後才進入實作、驗證與 fresh reviewer 審查。
+
+## Questions (batched — each with a suggested default)
+
+1. 是否留在目前工作區，沿用既有差異完成 A-003，而不建立獨立分支／worktree？
+
+   - Suggested default: 留在目前工作區，符合「沿用工作區既有差異」的委託；只修改本輪必要檔案。
+
+   - ans:
+
+---
+
+# → Ask / A-004 (emilyorz)
 
 +
