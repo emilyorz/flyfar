@@ -1,0 +1,167 @@
+{
+  "status": "completed",
+  "command": {
+    "executable": "omp",
+    "args": [
+      "-p",
+      "--model",
+      "xai-oauth/grok-4.6",
+      "--thinking",
+      "high",
+      "--no-session",
+      "--no-title",
+      "--no-skills",
+      "--no-rules",
+      "--no-extensions",
+      "--no-lsp",
+      "--tools",
+      "read,grep,glob,bash,write",
+      "--append-system-prompt",
+      "You are an explicitly delegated external-runner-v1 read-only reviewer. Follow only the supplied brief. Do not start Agentflow, delegate, launch another model, edit source, or run validation suites. Write only review.md in the disposable clone.",
+      "@/Users/leeabc/work/emilyorz/flyfar/.agentflow/artifacts/A-004-roundtrip/review-brief.md"
+    ]
+  },
+  "working_directory": "/private/var/folders/xw/7jpf5w6s7yz0x2bgpnlt4w1h0000gn/T/agentflow-external-runner-YC6jO4/clone",
+  "stdin_closed": true,
+  "timed_out": false,
+  "stalled": false,
+  "exit_code": 0,
+  "signal": null,
+  "process": {
+    "exit_code": 0,
+    "signal": null,
+    "error": null
+  },
+  "stdout": "審查完成，已寫入 clone 的 `review.md`。\n",
+  "stderr": "Working...\n",
+  "stdout_identity": {
+    "excerpt": "審查完成，已寫入 clone 的 `review.md`。\n",
+    "byte_length": 50,
+    "sha256": "d852efc8beb3870eca3ad801829a4f482bee3cdc99e41bd38352d9efb2c5a68c",
+    "truncated": false
+  },
+  "stderr_identity": {
+    "excerpt": "Working...\n",
+    "byte_length": 11,
+    "sha256": "dfef4c342f986ab93a9e0bb90f2d88c3bf25b2455853253d31ef95c1c55192a7",
+    "truncated": false
+  },
+  "stdout_bytes": 50,
+  "stderr_bytes": 11,
+  "stdout_truncated": false,
+  "stderr_truncated": false,
+  "result": {
+    "format": "file",
+    "value": "* _2026-09-15 07:22:39 +0800 (xai-oauth/grok-4.6/high)_\n\n- **結論：** 來源 `46bf3db64b378b7321723d96aa3f57d0ee1e996e` 已做到完整去回程、相容 JSON/CSV/table、誠實未知行李，以及 search 展開／cheapest 導向。主代理證據足夠，未重跑測試。\n\n- **風險：** 無阻塞缺陷。CSV 19 欄與班號解析主要靠 CLI 與真實查票；`tests/parse.test.ts` 未釘 `segment[22]` identity。\n\n- **下一步：** 主代理驗收本報告並完成 T-5 交付即可；不必再改產品。\n\n## Ask 對應\n\n- **去回程：** `src/commands/search.ts:94-134` 用已選去程全部航段查回程（`proto/flights.proto` field 4）。機場或回程日不符即丟錯（約 L105–107）；全部空 `returnOptions` 退出 1（L198–200）。\n\n- **價格：** 去程 `round-trip-from`、回程 `round-trip-total`。CLI 測 MM620 起價與 MM625 總價皆 8232，不相加；真實查票同語意。\n\n- **行李：** `src/core/parse.ts:261-264` 固定 `baggage.status=unknown`。table/CSV/JSON 明示未知，無猜價、無含行李總價。\n\n- **導向：** search 展開 `returnOptions`；`cheapest.ts:72-76` 在 `--stay` 只加 `returnDate`／`deepLink`，符合「至少導向」。篩選經 `...queryParams` 保留。\n\n- **相容：** 原 `flights[]` 欄位與一列去程仍在。CSV 前 14 欄順序不變，後加 `price_scope,baggage_status,deep_link,segments,return_options`。JSON 為附加欄位；`formatJson` 原樣序列化。\n\n- **錯誤：** 缺班號或方向錯誤走 `cli.ts` `handleError` 退出 2、stdout 空。`empty-return` 退出 1 仍輸出空選項。\n\n- **驗證（沿用、未重跑）：** 先 3 失敗再 25 通過；空回程先失敗後 13 CLI／tsc／build；真實 MM 2 去程各 3 回程；PTY help/search/cheapest/multi 退出 0；Python csv 19 欄與 JSON 相等。\n\n## Minimality\n\n- 只放 Google 連結：無法「呈現完整回程班次」。\n\n- 兩段單程相加：偽造票價。\n\n- cheapest 也逐候選抓回程：超出「至少導向」，本輪正確沒做。\n\n- 較小設計無法同時滿足 Ask，故非 BLOCKING。\n\n## 非阻塞\n\n- `tests/query.test.ts` 未覆蓋 `selectedFlights`（CLI 已解碼）。\n\n- `--open` 仍開未選去程總表；列上已有候選連結。\n\n- 推薦分仍只看去程，SPEC 已寫明。\n\nOutcome: PASS\n\nMinimality: PASS\n\nConformance: PASS\n\nSelf-check: 僅寫入 clone/review.md；未改來源、未跑測試套件、未開網路或 worker；三項裁決各一次；Ask 概念已對應；清單項之間有空行。\n",
+    "parse_error": null
+  },
+  "declared_result_file": {
+    "path": "/private/var/folders/xw/7jpf5w6s7yz0x2bgpnlt4w1h0000gn/T/agentflow-external-runner-YC6jO4/clone/review.md",
+    "exists": true,
+    "value": "* _2026-09-15 07:22:39 +0800 (xai-oauth/grok-4.6/high)_\n\n- **結論：** 來源 `46bf3db64b378b7321723d96aa3f57d0ee1e996e` 已做到完整去回程、相容 JSON/CSV/table、誠實未知行李，以及 search 展開／cheapest 導向。主代理證據足夠，未重跑測試。\n\n- **風險：** 無阻塞缺陷。CSV 19 欄與班號解析主要靠 CLI 與真實查票；`tests/parse.test.ts` 未釘 `segment[22]` identity。\n\n- **下一步：** 主代理驗收本報告並完成 T-5 交付即可；不必再改產品。\n\n## Ask 對應\n\n- **去回程：** `src/commands/search.ts:94-134` 用已選去程全部航段查回程（`proto/flights.proto` field 4）。機場或回程日不符即丟錯（約 L105–107）；全部空 `returnOptions` 退出 1（L198–200）。\n\n- **價格：** 去程 `round-trip-from`、回程 `round-trip-total`。CLI 測 MM620 起價與 MM625 總價皆 8232，不相加；真實查票同語意。\n\n- **行李：** `src/core/parse.ts:261-264` 固定 `baggage.status=unknown`。table/CSV/JSON 明示未知，無猜價、無含行李總價。\n\n- **導向：** search 展開 `returnOptions`；`cheapest.ts:72-76` 在 `--stay` 只加 `returnDate`／`deepLink`，符合「至少導向」。篩選經 `...queryParams` 保留。\n\n- **相容：** 原 `flights[]` 欄位與一列去程仍在。CSV 前 14 欄順序不變，後加 `price_scope,baggage_status,deep_link,segments,return_options`。JSON 為附加欄位；`formatJson` 原樣序列化。\n\n- **錯誤：** 缺班號或方向錯誤走 `cli.ts` `handleError` 退出 2、stdout 空。`empty-return` 退出 1 仍輸出空選項。\n\n- **驗證（沿用、未重跑）：** 先 3 失敗再 25 通過；空回程先失敗後 13 CLI／tsc／build；真實 MM 2 去程各 3 回程；PTY help/search/cheapest/multi 退出 0；Python csv 19 欄與 JSON 相等。\n\n## Minimality\n\n- 只放 Google 連結：無法「呈現完整回程班次」。\n\n- 兩段單程相加：偽造票價。\n\n- cheapest 也逐候選抓回程：超出「至少導向」，本輪正確沒做。\n\n- 較小設計無法同時滿足 Ask，故非 BLOCKING。\n\n## 非阻塞\n\n- `tests/query.test.ts` 未覆蓋 `selectedFlights`（CLI 已解碼）。\n\n- `--open` 仍開未選去程總表；列上已有候選連結。\n\n- 推薦分仍只看去程，SPEC 已寫明。\n\nOutcome: PASS\n\nMinimality: PASS\n\nConformance: PASS\n\nSelf-check: 僅寫入 clone/review.md；未改來源、未跑測試套件、未開網路或 worker；三項裁決各一次；Ask 概念已對應；清單項之間有空行。\n",
+    "content": "* _2026-09-15 07:22:39 +0800 (xai-oauth/grok-4.6/high)_\n\n- **結論：** 來源 `46bf3db64b378b7321723d96aa3f57d0ee1e996e` 已做到完整去回程、相容 JSON/CSV/table、誠實未知行李，以及 search 展開／cheapest 導向。主代理證據足夠，未重跑測試。\n\n- **風險：** 無阻塞缺陷。CSV 19 欄與班號解析主要靠 CLI 與真實查票；`tests/parse.test.ts` 未釘 `segment[22]` identity。\n\n- **下一步：** 主代理驗收本報告並完成 T-5 交付即可；不必再改產品。\n\n## Ask 對應\n\n- **去回程：** `src/commands/search.ts:94-134` 用已選去程全部航段查回程（`proto/flights.proto` field 4）。機場或回程日不符即丟錯（約 L105–107）；全部空 `returnOptions` 退出 1（L198–200）。\n\n- **價格：** 去程 `round-trip-from`、回程 `round-trip-total`。CLI 測 MM620 起價與 MM625 總價皆 8232，不相加；真實查票同語意。\n\n- **行李：** `src/core/parse.ts:261-264` 固定 `baggage.status=unknown`。table/CSV/JSON 明示未知，無猜價、無含行李總價。\n\n- **導向：** search 展開 `returnOptions`；`cheapest.ts:72-76` 在 `--stay` 只加 `returnDate`／`deepLink`，符合「至少導向」。篩選經 `...queryParams` 保留。\n\n- **相容：** 原 `flights[]` 欄位與一列去程仍在。CSV 前 14 欄順序不變，後加 `price_scope,baggage_status,deep_link,segments,return_options`。JSON 為附加欄位；`formatJson` 原樣序列化。\n\n- **錯誤：** 缺班號或方向錯誤走 `cli.ts` `handleError` 退出 2、stdout 空。`empty-return` 退出 1 仍輸出空選項。\n\n- **驗證（沿用、未重跑）：** 先 3 失敗再 25 通過；空回程先失敗後 13 CLI／tsc／build；真實 MM 2 去程各 3 回程；PTY help/search/cheapest/multi 退出 0；Python csv 19 欄與 JSON 相等。\n\n## Minimality\n\n- 只放 Google 連結：無法「呈現完整回程班次」。\n\n- 兩段單程相加：偽造票價。\n\n- cheapest 也逐候選抓回程：超出「至少導向」，本輪正確沒做。\n\n- 較小設計無法同時滿足 Ask，故非 BLOCKING。\n\n## 非阻塞\n\n- `tests/query.test.ts` 未覆蓋 `selectedFlights`（CLI 已解碼）。\n\n- `--open` 仍開未選去程總表；列上已有候選連結。\n\n- 推薦分仍只看去程，SPEC 已寫明。\n\nOutcome: PASS\n\nMinimality: PASS\n\nConformance: PASS\n\nSelf-check: 僅寫入 clone/review.md；未改來源、未跑測試套件、未開網路或 worker；三項裁決各一次；Ask 概念已對應；清單項之間有空行。\n",
+    "parse_error": null,
+    "byte_length": 2531,
+    "sha256": "85163562ba0fcb3d0168c1f2fd6ff59a5b68ed060bcf475aebfff7e533deb450",
+    "truncated": false,
+    "error": null
+  },
+  "result_file": {
+    "path": "/private/var/folders/xw/7jpf5w6s7yz0x2bgpnlt4w1h0000gn/T/agentflow-external-runner-YC6jO4/clone/review.md",
+    "exists": true,
+    "value": "* _2026-09-15 07:22:39 +0800 (xai-oauth/grok-4.6/high)_\n\n- **結論：** 來源 `46bf3db64b378b7321723d96aa3f57d0ee1e996e` 已做到完整去回程、相容 JSON/CSV/table、誠實未知行李，以及 search 展開／cheapest 導向。主代理證據足夠，未重跑測試。\n\n- **風險：** 無阻塞缺陷。CSV 19 欄與班號解析主要靠 CLI 與真實查票；`tests/parse.test.ts` 未釘 `segment[22]` identity。\n\n- **下一步：** 主代理驗收本報告並完成 T-5 交付即可；不必再改產品。\n\n## Ask 對應\n\n- **去回程：** `src/commands/search.ts:94-134` 用已選去程全部航段查回程（`proto/flights.proto` field 4）。機場或回程日不符即丟錯（約 L105–107）；全部空 `returnOptions` 退出 1（L198–200）。\n\n- **價格：** 去程 `round-trip-from`、回程 `round-trip-total`。CLI 測 MM620 起價與 MM625 總價皆 8232，不相加；真實查票同語意。\n\n- **行李：** `src/core/parse.ts:261-264` 固定 `baggage.status=unknown`。table/CSV/JSON 明示未知，無猜價、無含行李總價。\n\n- **導向：** search 展開 `returnOptions`；`cheapest.ts:72-76` 在 `--stay` 只加 `returnDate`／`deepLink`，符合「至少導向」。篩選經 `...queryParams` 保留。\n\n- **相容：** 原 `flights[]` 欄位與一列去程仍在。CSV 前 14 欄順序不變，後加 `price_scope,baggage_status,deep_link,segments,return_options`。JSON 為附加欄位；`formatJson` 原樣序列化。\n\n- **錯誤：** 缺班號或方向錯誤走 `cli.ts` `handleError` 退出 2、stdout 空。`empty-return` 退出 1 仍輸出空選項。\n\n- **驗證（沿用、未重跑）：** 先 3 失敗再 25 通過；空回程先失敗後 13 CLI／tsc／build；真實 MM 2 去程各 3 回程；PTY help/search/cheapest/multi 退出 0；Python csv 19 欄與 JSON 相等。\n\n## Minimality\n\n- 只放 Google 連結：無法「呈現完整回程班次」。\n\n- 兩段單程相加：偽造票價。\n\n- cheapest 也逐候選抓回程：超出「至少導向」，本輪正確沒做。\n\n- 較小設計無法同時滿足 Ask，故非 BLOCKING。\n\n## 非阻塞\n\n- `tests/query.test.ts` 未覆蓋 `selectedFlights`（CLI 已解碼）。\n\n- `--open` 仍開未選去程總表；列上已有候選連結。\n\n- 推薦分仍只看去程，SPEC 已寫明。\n\nOutcome: PASS\n\nMinimality: PASS\n\nConformance: PASS\n\nSelf-check: 僅寫入 clone/review.md；未改來源、未跑測試套件、未開網路或 worker；三項裁決各一次；Ask 概念已對應；清單項之間有空行。\n",
+    "content": "* _2026-09-15 07:22:39 +0800 (xai-oauth/grok-4.6/high)_\n\n- **結論：** 來源 `46bf3db64b378b7321723d96aa3f57d0ee1e996e` 已做到完整去回程、相容 JSON/CSV/table、誠實未知行李，以及 search 展開／cheapest 導向。主代理證據足夠，未重跑測試。\n\n- **風險：** 無阻塞缺陷。CSV 19 欄與班號解析主要靠 CLI 與真實查票；`tests/parse.test.ts` 未釘 `segment[22]` identity。\n\n- **下一步：** 主代理驗收本報告並完成 T-5 交付即可；不必再改產品。\n\n## Ask 對應\n\n- **去回程：** `src/commands/search.ts:94-134` 用已選去程全部航段查回程（`proto/flights.proto` field 4）。機場或回程日不符即丟錯（約 L105–107）；全部空 `returnOptions` 退出 1（L198–200）。\n\n- **價格：** 去程 `round-trip-from`、回程 `round-trip-total`。CLI 測 MM620 起價與 MM625 總價皆 8232，不相加；真實查票同語意。\n\n- **行李：** `src/core/parse.ts:261-264` 固定 `baggage.status=unknown`。table/CSV/JSON 明示未知，無猜價、無含行李總價。\n\n- **導向：** search 展開 `returnOptions`；`cheapest.ts:72-76` 在 `--stay` 只加 `returnDate`／`deepLink`，符合「至少導向」。篩選經 `...queryParams` 保留。\n\n- **相容：** 原 `flights[]` 欄位與一列去程仍在。CSV 前 14 欄順序不變，後加 `price_scope,baggage_status,deep_link,segments,return_options`。JSON 為附加欄位；`formatJson` 原樣序列化。\n\n- **錯誤：** 缺班號或方向錯誤走 `cli.ts` `handleError` 退出 2、stdout 空。`empty-return` 退出 1 仍輸出空選項。\n\n- **驗證（沿用、未重跑）：** 先 3 失敗再 25 通過；空回程先失敗後 13 CLI／tsc／build；真實 MM 2 去程各 3 回程；PTY help/search/cheapest/multi 退出 0；Python csv 19 欄與 JSON 相等。\n\n## Minimality\n\n- 只放 Google 連結：無法「呈現完整回程班次」。\n\n- 兩段單程相加：偽造票價。\n\n- cheapest 也逐候選抓回程：超出「至少導向」，本輪正確沒做。\n\n- 較小設計無法同時滿足 Ask，故非 BLOCKING。\n\n## 非阻塞\n\n- `tests/query.test.ts` 未覆蓋 `selectedFlights`（CLI 已解碼）。\n\n- `--open` 仍開未選去程總表；列上已有候選連結。\n\n- 推薦分仍只看去程，SPEC 已寫明。\n\nOutcome: PASS\n\nMinimality: PASS\n\nConformance: PASS\n\nSelf-check: 僅寫入 clone/review.md；未改來源、未跑測試套件、未開網路或 worker；三項裁決各一次；Ask 概念已對應；清單項之間有空行。\n",
+    "parse_error": null,
+    "byte_length": 2531,
+    "sha256": "85163562ba0fcb3d0168c1f2fd6ff59a5b68ed060bcf475aebfff7e533deb450",
+    "truncated": false,
+    "error": null
+  },
+  "clone": {
+    "root": "/private/var/folders/xw/7jpf5w6s7yz0x2bgpnlt4w1h0000gn/T/agentflow-external-runner-YC6jO4/clone",
+    "created": false,
+    "independent": true,
+    "remotes": [],
+    "git_directory": "/private/var/folders/xw/7jpf5w6s7yz0x2bgpnlt4w1h0000gn/T/agentflow-external-runner-YC6jO4/clone/.git",
+    "changed": true,
+    "diff_identity": {
+      "before": "c3e92a0426ad90a6c5f62f74c047ed70e151e8bf7afb3ea307b2c1af936fb374",
+      "after": "6e07f2e095bcac893b4d9dde8b8f7b54d19ced007f0e098fff3020e34a3acd8f"
+    }
+  },
+  "clone_diff_identity": {
+    "before": "c3e92a0426ad90a6c5f62f74c047ed70e151e8bf7afb3ea307b2c1af936fb374",
+    "after": "6e07f2e095bcac893b4d9dde8b8f7b54d19ced007f0e098fff3020e34a3acd8f",
+    "changed": true
+  },
+  "process_group_timeout": {
+    "trigger": "none",
+    "attempted": false,
+    "signals": [],
+    "terminated": false,
+    "group_after": "not_alive",
+    "proof": "not_needed"
+  },
+  "nested_worker": {
+    "visible": true,
+    "detected": false,
+    "processes": [],
+    "containment": {
+      "attempted": false,
+      "actions": []
+    },
+    "poll_count": 1109,
+    "recovery": {
+      "preserved_output": [
+        "stdout",
+        "stderr",
+        "clone_diff_identity"
+      ],
+      "evidence_status": "not_applicable",
+      "source_changes_preserved": true,
+      "fresh_review_required": false
+    }
+  },
+  "activity": {
+    "state": "disabled",
+    "stall_timeout_ms": 0,
+    "sample_count": 2,
+    "elapsed_ms": 279425,
+    "last_change_elapsed_ms": 279425,
+    "last_change_signs": [
+      "main_process",
+      "process_group",
+      "stdout",
+      "stderr",
+      "result_file",
+      "clone"
+    ],
+    "main_process": "exited",
+    "process_group": "not_alive",
+    "stdout": 50,
+    "stderr": 11,
+    "result_file": "file:2531:1789428206486.729",
+    "clone": "6e07f2e095bcac893b4d9dde8b8f7b54d19ced007f0e098fff3020e34a3acd8f"
+  },
+  "shutdown": {
+    "trigger": "none",
+    "attempted": false,
+    "signals": [],
+    "terminated": false,
+    "group_after": "not_alive",
+    "proof": "not_needed"
+  },
+  "acceptance": {
+    "accepted": false,
+    "reason": "Process exit and captured output do not prove coordinator acceptance."
+  },
+  "assurance": {
+    "os_level_confinement": "not_proven",
+    "remote_provider_cancellation": "not_proven"
+  },
+  "limitations": [
+    "The disposable clone does not prove OS-level confinement.",
+    "Local process termination does not prove remote-provider cancellation.",
+    "Process-tree visibility is limited to descendants exposed by the local process table."
+  ]
+}

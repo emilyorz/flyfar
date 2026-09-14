@@ -125,7 +125,7 @@ flyfar cheapest --from TPE --to NRT --range 2026-04-20 2026-04-30 --json
 
 - `flights[].deepLink` 會開啟已選去程的回程選擇頁。`cheapest --stay` 每個日期新增 `returnDate` 與 `deepLink`，可開啟指定日期的完整來回查詢；掃描價格仍是來回起價，不是已選定組合。
 
-- 行李目前統一標示「未知」與 `baggage.status: \"unknown\"`。尚無已驗證的 Google 費用欄位，不代表免費、已含或確定未含；不提供猜測的件數、重量、費用或含行李總價。實際票種、分開購票條件與行李費用以 Google Flights／航空公司確認為準。
+- 行李目前統一標示「未知」與 `baggage.status: "unknown"`。尚無已驗證的 Google 費用欄位，不代表免費、已含或確定未含；不提供猜測的件數、重量、費用或含行李總價。實際票種、分開購票條件與行李費用以 Google Flights／航空公司確認為準。
 
 - CSV 保留既有前 14 欄順序及每個去程候選一列，末尾新增 `price_scope`、`baggage_status`、`deep_link`、`segments`、`return_options`。最後兩欄為依 CSV 規則跳脫的 JSON，內容與 JSON 模式一致；舊 `flight_number` 欄維持原有 `type` 值，真正班號請讀 `segments[].flightNumber`。
 

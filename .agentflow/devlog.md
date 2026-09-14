@@ -4,19 +4,19 @@ Project: flyfar
 
 Notebook: .agentflow/devlog.md — root.
 
-Current commit: 8a98600144a2a587a79dd4f06003a1a81a0c65c1.
+Current commit: 46bf3db64b378b7321723d96aa3f57d0ee1e996e.
 
-Tests/scenarios: A-003 尚未執行；A-002 驗證保留於既有紀錄.
+Tests/scenarios: 25 tests 通過；新增空回程案例後 13 CLI tests、tsc、build 通過；PTY 四個入口與真實 6 組來回驗證；fresh review PASS.
 
 Configuration: ag.json — schema v7; validated for pi this round.
 
-Proven: 已恢復 A-003 委託並保留既有差異；尚未修改產品.
+Proven: A-003/A-004 完整配對去回程、未知行李與候選導向已驗證，獨立審查通過.
 
-Open: A-003 工作位置待確認，實作與驗證未開始.
+Open: none.
 
-Next: 回答 A-003 Questions 的 ans 後續作.
+Next: 等待新委託.
 
-Artifacts: none.
+Artifacts: .agentflow/artifacts/A-004-roundtrip/{tracker,verification,review,cross-check}.md.
 
 Archived eras: none.
 
@@ -241,3 +241,84 @@ Streams: none.
 - **Next work action:** 提交僅本輪差異並啟動 external-runner-v1；保留既有格式差異在工作區。
 
 - [x] tracker.md | [x] devlog RUN | [x] scope matches tracker
+
+## [RUN-002] Event — 2026-09-15 07:28:21 +0800 (A-004)
+
+- Fresh reviewer 對 46bf3db64b378b7321723d96aa3f57d0ee1e996e 的三項判定皆 PASS；已核對原始報告 SHA-256 85163562ba0fcb3d0168c1f2fd6ff59a5b68ed060bcf475aebfff7e533deb450 與唯一 review.md 寫入範圍，沒有巢狀 worker，程序已結束。
+
+- 最終差異檢查完成；來源與已通過測試不變。README/SPEC 僅移除行內範例的多餘反斜線，其餘新增記錄封存相同審查事實。清除本輪暫存與 clone，保留既有未提交差異。
+
+- tracker 5/5 完成；已修正 State 與 Evidence status 的機器值，驗證通過且只餘中文恢復說明的固定英文字串警告。
+
+## [RUN-003] Event — 2026-09-15 07:28:21 +0800 (A-004)
+
+- closeout 首次缺少主程序 OMPCODE 標記，尚未寫入或提交；本次以目前實際 Pi host 的 OMPCODE=1 子程序環境補足，再重試相同交付。不改設定或其他專案。
+
+## [RUN-004] Event — 2026-09-15 07:28:21 +0800 (A-004)
+
+- completion check 要求明列 query/table/CSV 的既有排版差異；補入三個已用 TypeScript AST 證明等價的逐檔分類，不修改、暫存或提交使用者既有差異。
+
+# ← Reply / A-004
+
+* _2026-09-15 07:28:21 +0800 (host/unknown)_
+
+## [SUMMARY]
+
+- 已完成 A-003 的續作：search 現在列出完整配對去回程；行李沒有可靠費用時明示未知，不猜價。
+
+- 真實查詢得到 6 組來回；離線回歸、型別、建置、實際終端及 fresh reviewer 均通過。既有工作區差異保留，不需再回答工作位置問題。
+
+## [FINAL REPORT]
+
+1. 完整去回程與相容輸出
+
+   - 成功：每個去程候選新增 returnOptions，列出回程所有航段、班號、日期與時間。選定確切去程後查回程，不拿獨立單程拼票。
+
+   - 原 flights 的 segments、price、durationMinutes、stops 與排序／推薦語意維持；CSV 保留前 14 欄及每個去程一列，末尾新增完整航段與回程選項。Python 標準 CSV reader 確認新欄內容與 JSON 完全相等。
+
+   - priceScope 區分單程、來回起價、配對來回總價；回程選項的 price 是整組總價，不可再加去程價格。沒有回程退出 1；缺可靠班號或上游方向／日期錯誤退出 2，不輸出假組合。
+
+2. 行李資訊與費用
+
+   - 成功交付誠實 UX：JSON 的 baggage.status、CSV 的 baggage_status 與表格均表示未知。尚無已驗證的行李費用欄位，不假稱免費、已含或確定未含，也不提供猜測的含行李總價。
+
+   - 實際票種、分開購票與行李限制需在 Google Flights／航空公司確認；不因費用不可可靠取得而阻塞交付。
+
+3. search／cheapest 完整組合導向
+
+   - 成功：search 的候選連結保留已選去程與原查詢條件；cheapest --stay 的每日結果提供正確去回程日期及 Google Flights 連結。
+
+   - search 每個去程增加一次回程請求，每批最多 5 個；cheapest 維持每日期一次查詢、價格仍為起價。既有 --open 開啟查詢總表，推薦仍按去程條件評分；文件已明列，不假稱完整組合最佳化。
+
+4. 凍結 fixture、失敗測試與實際驗證
+
+   - 成功：真實去識別 fixture 先凍結；初始 3 項回歸失敗後修復，完整 25 tests 通過。另重現「無回程仍退出 0」，修正後最後 13 CLI tests、tsc、build 通過；沿用未失效的 13 parser/query 測試證據，目前合計 26 項。
+
+   - 真實編譯 CLI 查 TPE→NRT、2026-10-20／25、MM 篩選：MM620 與 MM626 各 3 個配對回程。MM620＋MM625 為 8,232 TWD，回程抵台 2026-10-26 01:10，沒有把起價再加一次。此為當次觀察，不保證未來報價。
+
+   - /dev/ttys005 實際終端的 help／search／cheapest／multi 皆退出 0，shell 正常結束。終端 HTTP 使用固定 fixture，與真實網路查詢分開記錄。
+
+   - 證據：[驗證紀錄](artifacts/A-004-roundtrip/verification.md)、[追蹤表](artifacts/A-004-roundtrip/tracker.md)。
+
+5. Fresh reviewer、範圍保留與交付
+
+   - 成功：獨立 xai-oauth/grok-4.6 / high reviewer 經 external-runner-v1 在無 remote clone 審查，Outcome、Minimality、Conformance 均 PASS。主代理核對原始報告雜湊、精確來源 commit 與唯一 review.md 寫入範圍；無巢狀 worker，程序已結束。
+
+   - 實作 commit：46bf3db64b378b7321723d96aa3f57d0ee1e996e。提交前已 fetch origin，HEAD..origin/main 無待整合 commit；收尾限定本輪記錄及文書引號修正，由本輪 closeout 提交推送。
+
+   - 既有 .gitignore、README.md、SKILL.md、project-iterations/*、fetch 與 ag.json 差異保持原狀；query/table/CSV 原有格式差異也留在工作區，未混入提交。沒有改 Agentflow skill、Dashboard、gateway 或其他專案。
+
+   - 瀏覽器、PTY 與 reviewer 均已結束；暫存網路回應及 disposable clone 已移至垃圾桶。追蹤表 5/5 完成；中文恢復說明觸發英文固定字串的非阻塞排版警告，未因此重跑測試或審查。
+
+   - 證據：[原始獨立報告](artifacts/A-004-roundtrip/review.md)、[主代理驗收](artifacts/A-004-roundtrip/cross-check.md)。
+
+
+## Questions (batched — each with a suggested default)
+
+- None.
+
+---
+
+# → Ask / A-005 (emilyorz)
+
++

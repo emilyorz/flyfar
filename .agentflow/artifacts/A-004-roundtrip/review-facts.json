@@ -1,0 +1,25 @@
+{
+  "changed_files": [
+    ".agentflow/artifacts/A-004-roundtrip/verification.md",
+    "README.zh-TW.md",
+    "SPEC.md",
+    "proto/flights.proto",
+    "src/commands/cheapest.ts",
+    "src/commands/search.ts",
+    "src/core/parse.ts",
+    "src/core/query.ts",
+    "src/output/csv.ts",
+    "src/output/table.ts",
+    "src/types.ts",
+    "tests/cli.test.ts",
+    "tests/fixtures/http.mjs",
+    "tests/fixtures/roundtrip-outbound.html",
+    "tests/fixtures/roundtrip-return.html"
+  ],
+  "changed_lines": 425,
+  "behavior_change": true,
+  "trust_boundary": false,
+  "broad_change": false,
+  "consequential_change": false,
+  "owner_control": "default"
+}

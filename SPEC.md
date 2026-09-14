@@ -119,11 +119,11 @@ flyfar cheapest --from TPE --to NRT --range 2026-04-20 2026-04-30 --json
 
 - `SelectedFlight` 編碼出發機場 field 1、出發日期 field 2、抵達機場 field 3、航空公司代碼 field 5、班號數字部分 field 6；其餘日期、座艙、旅客與篩選條件維持原查詢。
 
-- 去程 `priceScope: \"round-trip-from\"` 表示 Google 來回起價；回程選項 `priceScope: \"round-trip-total\"` 的 `price` 為該去回程整組總價，不得相加。單程 search 為 `one-way`；既有 duration/stops 與排序／推薦語意不變，回程選項提供自己的航段時長與轉機數。
+- 去程 `priceScope: "round-trip-from"` 表示 Google 來回起價；回程選項 `priceScope: "round-trip-total"` 的 `price` 為該去回程整組總價，不得相加。單程 search 為 `one-way`；既有 duration/stops 與排序／推薦語意不變，回程選項提供自己的航段時長與轉機數。
 
 - 航段新增可靠解析的 `airlineCode`、`flightNumber`，保留完整日期與時間。每個候選的 `deepLink` 導向已選去程的回程選擇頁；不是保證可直接出票的訂位連結。
 
-- 沒有已驗證的行李費用欄位時，JSON 為 `baggage: {\"status\":\"unknown\"}`，CSV 為 `baggage_status=unknown`，表格標示未知且不宣稱含行李總價。未知不得轉成零元或免費。
+- 沒有已驗證的行李費用欄位時，JSON 為 `baggage: {"status":"unknown"}`，CSV 為 `baggage_status=unknown`，表格標示未知且不宣稱含行李總價。未知不得轉成零元或免費。
 
 - CSV 原有前 14 欄及一個去程候選一列維持不變，新增 `price_scope,baggage_status,deep_link,segments,return_options`；後兩欄為 CSV 跳脫的 JSON。舊 `flight_number` 的 `type` 語意維持相容，不挪用該欄位。
 
