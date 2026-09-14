@@ -1,0 +1,24 @@
+{
+  "changed_files": [
+    "src/cli.ts",
+    "src/types.ts",
+    "src/core/parse.ts",
+    "src/commands/search.ts",
+    "src/commands/cheapest.ts",
+    "tests/placeholder.test.ts",
+    "tests/parse.test.ts",
+    "tests/query.test.ts",
+    "tests/cli.test.ts",
+    "tests/fixtures/flights.html",
+    "tests/fixtures/http.mjs",
+    "SPEC.md",
+    "README.zh-TW.md",
+    ".agentflow/artifacts/A-002-reliability/verification.md"
+  ],
+  "changed_lines": 801,
+  "behavior_change": true,
+  "trust_boundary": false,
+  "broad_change": false,
+  "consequential_change": false,
+  "owner_control": "default"
+}
