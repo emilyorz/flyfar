@@ -62,34 +62,40 @@ flyfar cheapest --from TPE --to NRT --range 2026-04-20 2026-04-30 --stay 5
 flyfar cheapest --from TPE --to NRT --range 2026-04-20 2026-04-30 --json
 ```
 
+- `--range` 必須提供兩個有效日期，包含起訖日；`--stay` 與日期掃描不受電腦時區影響。
+
+- `--json` 優先於 CSV 與推薦表格，適合程式串接；`search`、`multi` 的 `--open` 可開啟對應 Google Flights 查詢。
+
+- `cheapest` 任一日期查詢失敗會以代碼 `2` 結束，不輸出偽裝成成功的部分結果；全程沒有航班則為 `1`。
+
 ### 通用選項
 
-| 參數 | 說明 | 預設值 |
-|------|------|--------|
-| `--json` | 結構化 JSON 輸出 | `false` |
-| `--currency <code>` | 幣別（TWD、USD、JPY 等） | `TWD` |
-| `--language <code>` | 語言代碼 | `en-US` |
-| `--proxy <url>` | HTTP 代理 URL | 無 |
+| 參數                | 說明                     | 預設值  |
+| ------------------- | ------------------------ | ------- |
+| `--json`            | 結構化 JSON 輸出         | `false` |
+| `--currency <code>` | 幣別（TWD、USD、JPY 等） | `TWD`   |
+| `--language <code>` | 語言代碼                 | `en-US` |
+| `--proxy <url>`     | HTTP 代理 URL            | 無      |
 
 ### 航空公司別名
 
 支援台灣常用航線的中英文別名：
 
-| 別名 | IATA | 別名 | IATA |
-|------|------|------|------|
-| EVA / 長榮 | BR | CI / 華航 | CI |
-| starlux / 星宇 | JX | peach / 樂桃 | MM |
-| scoot / 酷航 | TR | tigerair / 虎航 | IT |
-| jal / 日航 | JL | ana / 全日空 | NH |
-| jetstar / 捷星 | GK | cathay / 國泰 | CX |
+| 別名           | IATA | 別名            | IATA |
+| -------------- | ---- | --------------- | ---- |
+| EVA / 長榮     | BR   | CI / 華航       | CI   |
+| starlux / 星宇 | JX   | peach / 樂桃    | MM   |
+| scoot / 酷航   | TR   | tigerair / 虎航 | IT   |
+| jal / 日航     | JL   | ana / 全日空    | NH   |
+| jetstar / 捷星 | GK   | cathay / 國泰   | CX   |
 
 ## 結束代碼
 
-| 代碼 | 意義 |
-|------|------|
-| 0 | 成功，找到航班 |
-| 1 | 成功，但沒有符合條件的航班 |
-| 2 | 錯誤（網路、解析、驗證） |
+| 代碼 | 意義                       |
+| ---- | -------------------------- |
+| 0    | 成功，找到航班             |
+| 1    | 成功，但沒有符合條件的航班 |
+| 2    | 錯誤（網路、解析、驗證）   |
 
 ## 運作原理
 
@@ -99,13 +105,25 @@ flyfar cheapest --from TPE --to NRT --range 2026-04-20 2026-04-30 --json
 4. 把深層巢狀陣列解析成乾淨的型別物件
 5. 輸出彩色表格或結構化 JSON
 
-重試：3 次，指數退避（1s、2s、4s）。逾時：每次請求 15 秒。
+最多嘗試 3 次，兩次重試前分別等待 1 秒、2 秒。請求設定 15 秒逾時；目前逾時未涵蓋回應本文下載。
 
 ## 限制
 
 - Google 可能會封鎖沒有正確 TLS 指紋的請求。CLI 使用瀏覽器 headers，實測可用，但 Google 隨時可能開始封鎖。
 - 回應解析依賴 Google 的內部資料結構。如果 Google 改了，解析會壞掉，但會給出清楚的錯誤訊息，並將原始 HTML 存到 `/tmp/` 供除錯。
 - `cheapest` 指令每個日期發一次請求，掃 30 天 = 30 次請求。請合理使用。
+
+- `--proxy` 目前雖出現在參數介面，HTTP 傳輸尚未套用代理設定；本輪未新增代理功能。
+
+## 本機驗證與修正紀錄
+
+- `npm test`：使用去識別化 Google Flights fixture，驗證 parser、protobuf query 與實際 CLI 子程序；不需連線。
+
+- `npx tsc --noEmit && npm run build`：檢查來源型別並建置入口。`node dist/cli.js --help` 可確認程式啟動。
+
+- 2026-09-14：補回最佳航班群組，修正整點時間、含轉機等待的總時長、`cheapest --range`、時區日期偏移、錯誤退出碼、JSON 輸出優先序及 `multi --open`。
+
+- 真實網路查票另外執行，可能受 Google 封鎖或資料結構改動影響，不作為離線測試的唯一通過條件。
 
 ## 授權
 

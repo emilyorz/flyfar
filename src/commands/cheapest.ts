@@ -7,27 +7,27 @@ import { formatCheapestTable } from "../output/table.js";
 
 function dateRange(start: string, end: string): string[] {
   const dates: string[] = [];
-  const current = new Date(start + "T00:00:00");
-  const endDate = new Date(end + "T00:00:00");
+  const current = new Date(start + "T00:00:00Z");
+  const endDate = new Date(end + "T00:00:00Z");
 
   while (current <= endDate) {
     dates.push(current.toISOString().split("T")[0]!);
-    current.setDate(current.getDate() + 1);
+    current.setUTCDate(current.getUTCDate() + 1);
   }
 
   return dates;
 }
 
 function addDays(date: string, days: number): string {
-  const d = new Date(date + "T00:00:00");
-  d.setDate(d.getDate() + days);
+  const d = new Date(date + "T00:00:00Z");
+  d.setUTCDate(d.getUTCDate() + days);
   return d.toISOString().split("T")[0]!;
 }
 
 async function fetchCheapestDate(
   date: string,
   input: CheapestInput,
-  trip: "one-way" | "round-trip"
+  trip: "one-way" | "round-trip",
 ): Promise<CheapestResponse["dates"][0]> {
   const legs = [{ date, from: input.from, to: input.to }];
 
@@ -60,7 +60,7 @@ async function fetchCheapestDate(
     const response = parseFlightsHtml(
       html,
       { from: input.from, to: input.to, date },
-      input.currency
+      input.currency,
     );
 
     const prices = response.flights
@@ -74,19 +74,14 @@ async function fetchCheapestDate(
       flightCount: response.flights.length,
     };
   } catch (error) {
-    return {
-      date,
-      cheapestPrice: 0,
-      currency: input.currency,
-      flightCount: 0,
-    };
+    throw new Error(`[${date}] ${error instanceof Error ? error.message : String(error)}`, { cause: error });
   }
 }
 
 async function runWithConcurrency<T, R>(
   items: T[],
   concurrency: number,
-  fn: (item: T) => Promise<R>
+  fn: (item: T) => Promise<R>,
 ): Promise<R[]> {
   const results: R[] = new Array(items.length);
   let index = 0;
@@ -98,8 +93,9 @@ async function runWithConcurrency<T, R>(
     }
   }
 
-  const workers = Array.from({ length: Math.min(concurrency, items.length) }, () =>
-    worker()
+  const workers = Array.from(
+    { length: Math.min(concurrency, items.length) },
+    () => worker(),
   );
   await Promise.all(workers);
   return results;
@@ -115,14 +111,14 @@ export async function cheapestCommand(input: CheapestInput): Promise<void> {
 
   if (dates.length > 30) {
     process.stderr.write(
-      `Warning: scanning ${dates.length} dates — this will make ${dates.length} requests with concurrency ${input.concurrency}\n`
+      `Warning: scanning ${dates.length} dates — this will make ${dates.length} requests with concurrency ${input.concurrency}\n`,
     );
   }
 
   const trip = input.stay ? "round-trip" : "one-way";
 
   process.stderr.write(
-    `Scanning cheapest: ${input.from} → ${input.to} (${dates.length} dates, concurrency=${input.concurrency})...\n`
+    `Scanning cheapest: ${input.from} → ${input.to} (${dates.length} dates, concurrency=${input.concurrency})...\n`,
   );
 
   const results = await runWithConcurrency(
@@ -132,10 +128,10 @@ export async function cheapestCommand(input: CheapestInput): Promise<void> {
       process.stderr.write(`  [${date}] fetching...\n`);
       const result = await fetchCheapestDate(date, input, trip);
       process.stderr.write(
-        `  [${date}] ${result.cheapestPrice > 0 ? `$${result.cheapestPrice}` : "no prices"} (${result.flightCount} flights)\n`
+        `  [${date}] ${result.cheapestPrice > 0 ? `$${result.cheapestPrice}` : "no prices"} (${result.flightCount} flights)\n`,
       );
       return result;
-    }
+    },
   );
 
   const cheapestResponse: CheapestResponse = {
@@ -157,5 +153,9 @@ export async function cheapestCommand(input: CheapestInput): Promise<void> {
     process.stdout.write(formatJson(cheapestResponse) + "\n");
   } else {
     process.stdout.write(formatCheapestTable(cheapestResponse) + "\n");
+  }
+
+  if (results.every((result) => result.flightCount === 0)) {
+    process.exitCode = 1;
   }
 }

@@ -2,16 +2,18 @@ import { z } from "zod";
 
 // --- CLI Input Schemas ---
 
-const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+const dateSchema = z.iso.date();
 
 export const SearchInputSchema = z.object({
   from: z.string().length(3).toUpperCase(),
   to: z.string().length(3).toUpperCase(),
-  date: z.string().regex(dateRegex, "Date must be YYYY-MM-DD"),
-  return: z.string().regex(dateRegex).optional(),
+  date: dateSchema,
+  return: dateSchema.optional(),
   direct: z.boolean().default(false),
   airline: z.array(z.string()).optional(),
-  seat: z.enum(["economy", "premium-economy", "business", "first"]).default("economy"),
+  seat: z
+    .enum(["economy", "premium-economy", "business", "first"])
+    .default("economy"),
   passengers: z.number().int().min(1).max(9).default(1),
   sort: z.enum(["price", "duration", "departure", "stops"]).default("price"),
   recommend: z.boolean().default(false),
@@ -21,19 +23,31 @@ export const SearchInputSchema = z.object({
   language: z.string().default("en-US"),
   currency: z.string().default("TWD"),
   proxy: z.string().optional(),
+}).refine((input) => !input.return || input.return >= input.date, {
+  path: ["return"],
+  message: "回程日期不得早於出發日期",
 });
 
 export type SearchInput = z.infer<typeof SearchInputSchema>;
 
 export const MultiCityInputSchema = z.object({
-  route: z.array(z.string().length(3)),
-  dates: z.array(z.string().regex(dateRegex)),
-  seat: z.enum(["economy", "premium-economy", "business", "first"]).default("economy"),
+  route: z.array(z.string().length(3)).min(2),
+  dates: z.array(dateSchema),
+  seat: z
+    .enum(["economy", "premium-economy", "business", "first"])
+    .default("economy"),
   passengers: z.number().int().min(1).max(9).default(1),
   json: z.boolean().default(false),
+  open: z.boolean().default(false),
   language: z.string().default("en-US"),
   currency: z.string().default("TWD"),
   proxy: z.string().optional(),
+}).refine((input) => input.dates.length === input.route.length - 1, {
+  path: ["dates"],
+  message: "每個航段需要一個日期",
+}).refine((input) => input.dates.every((date, index) => index === 0 || date >= input.dates[index - 1]), {
+  path: ["dates"],
+  message: "航段日期必須依時間先後排列",
 });
 
 export type MultiCityInput = z.infer<typeof MultiCityInputSchema>;
@@ -41,14 +55,17 @@ export type MultiCityInput = z.infer<typeof MultiCityInputSchema>;
 export const CheapestInputSchema = z.object({
   from: z.string().length(3).toUpperCase(),
   to: z.string().length(3).toUpperCase(),
-  rangeStart: z.string().regex(dateRegex),
-  rangeEnd: z.string().regex(dateRegex),
+  rangeStart: dateSchema,
+  rangeEnd: dateSchema,
   stay: z.number().int().min(1).optional(),
   concurrency: z.number().int().min(1).max(10).default(5),
   json: z.boolean().default(false),
   language: z.string().default("en-US"),
   currency: z.string().default("TWD"),
   proxy: z.string().optional(),
+}).refine((input) => input.rangeEnd >= input.rangeStart, {
+  path: ["rangeEnd"],
+  message: "結束日期不得早於開始日期",
 });
 
 export type CheapestInput = z.infer<typeof CheapestInputSchema>;

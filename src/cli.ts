@@ -1,12 +1,19 @@
 #!/usr/bin/env node
 
 import { Command } from "commander";
-import { SearchInputSchema, CheapestInputSchema, MultiCityInputSchema } from "./types.js";
+import {
+  SearchInputSchema,
+  CheapestInputSchema,
+  MultiCityInputSchema,
+} from "./types.js";
 import { searchCommand, multiCityCommand } from "./commands/search.js";
 import { cheapestCommand } from "./commands/cheapest.js";
 import { ZodError } from "zod";
 
 const program = new Command();
+program.exitOverride((error) => {
+  process.exit(error.exitCode === 0 ? 0 : 2);
+});
 
 program
   .name("flyfar")
@@ -24,12 +31,12 @@ program
   .option(
     "--airline <codes>",
     "Filter by airline (comma-separated, e.g. EVA,CI,Peach)",
-    (val: string) => val.split(",")
+    (val: string) => val.split(","),
   )
   .option(
     "--seat <type>",
     "Seat class: economy, premium-economy, business, first",
-    "economy"
+    "economy",
   )
   .option("--passengers <n>", "Number of adult passengers", "1")
   .option("--sort <key>", "Sort by: price, duration, departure, stops", "price")
@@ -58,12 +65,12 @@ program
   .requiredOption(
     "--route <codes>",
     "Airport codes (comma-separated, e.g. TPE,NRT,KIX,TPE)",
-    (val: string) => val.split(",").map((s: string) => s.trim().toUpperCase())
+    (val: string) => val.split(",").map((s: string) => s.trim().toUpperCase()),
   )
   .requiredOption(
     "--dates <dates>",
     "Dates for each leg (comma-separated)",
-    (val: string) => val.split(",").map((s: string) => s.trim())
+    (val: string) => val.split(",").map((s: string) => s.trim()),
   )
   .option("--seat <type>", "Seat class", "economy")
   .option("--passengers <n>", "Number of adult passengers", "1")
@@ -90,12 +97,8 @@ program
   .requiredOption("--from <code>", "Departure airport (IATA code)")
   .requiredOption("--to <code>", "Arrival airport (IATA code)")
   .requiredOption(
-    "--range <start> <end>",
-    "Date range (two dates)",
-    (val: string, prev: string[]) => {
-      if (!prev) return [val];
-      return [...prev, val];
-    }
+    "--range <dates...>",
+    "Date range (exactly two dates: start end)",
   )
   .option("--stay <days>", "Stay duration in days (adds return leg)")
   .option("--concurrency <n>", "Max concurrent requests (1-10)", "5")
@@ -106,8 +109,8 @@ program
   .action(async (opts) => {
     try {
       const range = opts.range as string[];
-      if (!range || range.length < 2) {
-        process.stderr.write("Error: --range needs two dates (start end)\n");
+      if (!range || range.length !== 2) {
+        process.stderr.write("Error: --range needs exactly two dates (start end)\n");
         process.exit(2);
       }
       const input = CheapestInputSchema.parse({

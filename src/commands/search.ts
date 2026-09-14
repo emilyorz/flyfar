@@ -1,10 +1,19 @@
 import type { SearchInput, MultiCityInput } from "../types.js";
 import { resolveAirline } from "../types.js";
-import { buildTfsParam, buildFlightsUrl, type FlightLeg, type QueryParams } from "../core/query.js";
+import {
+  buildTfsParam,
+  buildFlightsUrl,
+  type FlightLeg,
+  type QueryParams,
+} from "../core/query.js";
 import { fetchFlightsHtml } from "../core/fetch.js";
-import { parseFlightsHtml, ParseError } from "../core/parse.js";
+import { parseFlightsHtml } from "../core/parse.js";
 import { formatJson } from "../output/json.js";
-import { formatSearchTable, sortFlights, formatRecommendTable } from "../output/table.js";
+import {
+  formatSearchTable,
+  sortFlights,
+  formatRecommendTable,
+} from "../output/table.js";
 import { formatSearchCsv } from "../output/csv.js";
 import type { SortKey } from "../output/table.js";
 import type { TripType } from "../types.js";
@@ -47,7 +56,7 @@ export async function searchCommand(input: SearchInput): Promise<void> {
   };
 
   process.stderr.write(
-    `Searching ${input.from} → ${input.to} on ${input.date}${input.return ? ` (return ${input.return})` : ""}...\n`
+    `Searching ${input.from} → ${input.to} on ${input.date}${input.return ? ` (return ${input.return})` : ""}...\n`,
   );
 
   const tfs = await buildTfsParam(queryParams);
@@ -70,7 +79,7 @@ export async function searchCommand(input: SearchInput): Promise<void> {
       date: input.date,
       returnDate: input.return,
     },
-    input.currency
+    input.currency,
   );
 
   const deepLink = buildFlightsUrl(tfs, input.language, input.currency);
@@ -78,7 +87,11 @@ export async function searchCommand(input: SearchInput): Promise<void> {
   const sorted = sortFlights(response.flights, input.sort as SortKey);
   const sortedResponse = { ...response, flights: sorted, deepLink };
 
-  if (input.recommend && sorted.length > 0) {
+  if (input.json || input.output === "json") {
+    process.stdout.write(formatJson(sortedResponse) + "\n");
+  } else if (input.output === "csv") {
+    process.stdout.write(formatSearchCsv(sortedResponse) + "\n");
+  } else if (input.recommend && sorted.length > 0) {
     const n = sorted.length;
     // Normalize ranks (0-1, lower rank = better)
     const priceRank = sorted.map((f) => f.price.amount).filter((p) => p > 0);
@@ -89,7 +102,10 @@ export async function searchCommand(input: SearchInput): Promise<void> {
       if (f.price.amount <= 0) return 1;
       const sortedP = [...priceRank].sort((a, b) => a - b);
       // Use findIndex on sorted to handle ties by giving the same score
-      return sortedP.findIndex((p) => p === f.price.amount) / (sortedP.length - 1 || 1);
+      return (
+        sortedP.findIndex((p) => p === f.price.amount) /
+        (sortedP.length - 1 || 1)
+      );
     });
     const durationNorm = sorted.map((f) => {
       const sortedD = [...durationRank].sort((a, b) => a - b);
@@ -103,7 +119,8 @@ export async function searchCommand(input: SearchInput): Promise<void> {
     let bestIdx = 0;
     let bestScore = -1;
     for (let i = 0; i < n; i++) {
-      const score = priceNorm[i] * 0.4 + durationNorm[i] * 0.3 + stopsNorm[i] * 0.3;
+      const score =
+        priceNorm[i] * 0.4 + durationNorm[i] * 0.3 + stopsNorm[i] * 0.3;
       if (score < bestScore || bestScore < 0) {
         bestScore = score;
         bestIdx = i;
@@ -112,18 +129,17 @@ export async function searchCommand(input: SearchInput): Promise<void> {
     // Tiebreaker: prefer earlier flight when scores are equal
     let tiedIdx = -1;
     for (let i = 0; i < n; i++) {
-      const score = priceNorm[i] * 0.4 + durationNorm[i] * 0.3 + stopsNorm[i] * 0.3;
+      const score =
+        priceNorm[i] * 0.4 + durationNorm[i] * 0.3 + stopsNorm[i] * 0.3;
       if (Math.abs(score - bestScore) < 0.001 && i < bestIdx) {
         tiedIdx = i;
       }
     }
     if (tiedIdx >= 0) bestIdx = tiedIdx;
     process.stdout.write(formatSearchTable(sortedResponse) + "\n");
-    process.stdout.write(formatRecommendTable(sorted[bestIdx], 1 - bestScore) + "\n");
-  } else if (input.output === "csv") {
-    process.stdout.write(formatSearchCsv(sortedResponse) + "\n");
-  } else if (input.json || input.output === "json") {
-    process.stdout.write(formatJson(sortedResponse) + "\n");
+    process.stdout.write(
+      formatRecommendTable(sorted[bestIdx], 1 - bestScore) + "\n",
+    );
   } else {
     process.stdout.write(formatSearchTable(sortedResponse) + "\n");
   }
@@ -136,7 +152,7 @@ export async function searchCommand(input: SearchInput): Promise<void> {
 
   // Exit code: 0 = flights found, 1 = no flights
   if (response.flights.length === 0) {
-    process.exit(1);
+    process.exitCode = 1;
   }
 }
 
@@ -148,7 +164,7 @@ export async function multiCityCommand(input: MultiCityInput): Promise<void> {
 
   if (input.dates.length !== input.route.length - 1) {
     process.stderr.write(
-      `Error: need ${input.route.length - 1} dates for ${input.route.length} airports, got ${input.dates.length}\n`
+      `Error: need ${input.route.length - 1} dates for ${input.route.length} airports, got ${input.dates.length}\n`,
     );
     process.exit(2);
   }
@@ -171,9 +187,7 @@ export async function multiCityCommand(input: MultiCityInput): Promise<void> {
     currency: input.currency,
   };
 
-  const legDescriptions = legs
-    .map((l) => `${l.from}→${l.to}`)
-    .join(", ");
+  const legDescriptions = legs.map((l) => `${l.from}→${l.to}`).join(", ");
   process.stderr.write(`Searching multi-city: ${legDescriptions}...\n`);
 
   const tfs = await buildTfsParam(queryParams);
@@ -191,18 +205,21 @@ export async function multiCityCommand(input: MultiCityInput): Promise<void> {
       to: input.route[input.route.length - 1]!,
       date: input.dates[0]!,
     },
-    input.currency
+    input.currency,
   );
 
-  if (input.output === "csv") {
-    process.stdout.write(formatSearchCsv(response) + "\n");
-  } else if (input.json) {
+  if (input.json) {
     process.stdout.write(formatJson(response) + "\n");
   } else {
     process.stdout.write(formatSearchTable(response) + "\n");
   }
 
+  if (input.open) {
+    const openCmd = process.platform === "darwin" ? "open" : "xdg-open";
+    spawn(openCmd, [buildFlightsUrl(tfs, input.language, input.currency)], { stdio: "ignore", detached: true });
+  }
+
   if (response.flights.length === 0) {
-    process.exit(1);
+    process.exitCode = 1;
   }
 }

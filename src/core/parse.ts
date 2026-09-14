@@ -1,5 +1,26 @@
 import type { FlightResult, FlightSegment, SearchResponse } from "../types.js";
 import { saveDebugHtml } from "./fetch.js";
+import { z } from "zod";
+
+const airportSchema = z.object({ code: z.string().regex(/^[A-Z]{3}$/), name: z.string() });
+const dateTimeSchema = z.object({ date: z.iso.date(), time: z.iso.time({ precision: -1 }) });
+const flightSchema = z.object({
+  type: z.string(),
+  airlines: z.array(z.string()).min(1),
+  price: z.object({ amount: z.number().nonnegative(), currency: z.string() }),
+  durationMinutes: z.number().int().positive(),
+  stops: z.number().int().nonnegative(),
+  segments: z.array(z.object({
+    airline: z.string(),
+    fromAirport: airportSchema,
+    toAirport: airportSchema,
+    departure: dateTimeSchema,
+    arrival: dateTimeSchema,
+    durationMinutes: z.number().int().positive(),
+    planeType: z.string(),
+  })).min(1),
+  carbonEmission: z.object({ grams: z.number().nonnegative(), typicalGrams: z.number().nonnegative() }).optional(),
+});
 
 /**
  * Defensive array access — returns undefined instead of throwing on out-of-bounds.
@@ -12,20 +33,17 @@ function safeGet<T>(arr: unknown, index: number, path: string): T | undefined {
   return arr[index] as T;
 }
 
-function requireGet<T>(arr: unknown, index: number, path: string): T {
-  const val = safeGet<T>(arr, index, path);
-  if (val === undefined || val === null) {
-    throw new ParseError(
-      `Google Flights response structure changed at ${path}[${index}] — expected data but got ${val}`
-    );
+function requireArray(value: unknown, path: string): unknown[] {
+  if (!Array.isArray(value)) {
+    throw new ParseError(`Google Flights response structure changed at ${path} — expected array`);
   }
-  return val;
+  return value;
 }
 
 export class ParseError extends Error {
   constructor(
     message: string,
-    public debugHtmlPath?: string
+    public debugHtmlPath?: string,
   ) {
     super(message);
     this.name = "ParseError";
@@ -43,7 +61,7 @@ function extractJsonFromHtml(html: string): unknown {
 
   if (!match || !match[1]) {
     throw new ParseError(
-      "Could not find script.ds:1 in HTML — Google may have changed their page structure"
+      "Could not find script.ds:1 in HTML — Google may have changed their page structure",
     );
   }
 
@@ -54,7 +72,7 @@ function extractJsonFromHtml(html: string): unknown {
   const dataIdx = scriptContent.indexOf("data:");
   if (dataIdx === -1) {
     throw new ParseError(
-      'Could not find "data:" marker in script.ds:1 content'
+      'Could not find "data:" marker in script.ds:1 content',
     );
   }
 
@@ -71,7 +89,7 @@ function extractJsonFromHtml(html: string): unknown {
     return JSON.parse(jsonStr);
   } catch {
     throw new ParseError(
-      `Failed to parse JSON from script.ds:1 (length: ${jsonStr.length})`
+      `Failed to parse JSON from script.ds:1 (length: ${jsonStr.length})`,
     );
   }
 }
@@ -85,11 +103,12 @@ function formatDate(dateTuple: unknown): string {
 }
 
 function formatTime(timeTuple: unknown): string {
-  if (!Array.isArray(timeTuple) || timeTuple.length < 2) {
+  if (!Array.isArray(timeTuple)) {
     return "unknown";
   }
+  // Google 省略值為零的時間欄位，例如 [2] 代表 02:00。
   const [hour, minute] = timeTuple;
-  return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
+  return `${String(hour ?? 0).padStart(2, "0")}:${String(minute ?? 0).padStart(2, "0")}`;
 }
 
 /**
@@ -128,80 +147,61 @@ function parseSegment(segment: unknown[], path: string): FlightSegment {
  * Parse the full payload into structured flight results.
  */
 function parsePayload(payload: unknown[]): FlightResult[] {
-  const flightsList = safeGet<unknown[] | null>(payload, 3, "payload");
-  if (!flightsList) return [];
-
-  const flightsArr = safeGet<unknown[]>(flightsList, 0, "payload[3]");
-  if (!flightsArr) return [];
-
+  if (payload.length < 4) {
+    throw new ParseError("Google Flights response structure changed at payload — missing flight groups");
+  }
   const results: FlightResult[] = [];
+  let firstError: ParseError | undefined;
 
-  for (let i = 0; i < flightsArr.length; i++) {
-    try {
-      const entry = flightsArr[i] as unknown[];
-      if (!Array.isArray(entry)) continue;
+  // payload[2] 與 payload[3] 分別包含最佳航班及其他航班。
+  for (const groupIndex of [2, 3]) {
+    const groupPath = `payload[${groupIndex}]`;
+    const group = payload[groupIndex];
+    if (group === null) continue;
+    const container = requireArray(group, groupPath);
+    const entries = requireArray(container[0], `${groupPath}[0]`);
 
-      const flight = safeGet<unknown[]>(entry, 0, `flights[${i}]`);
-      const priceInfo = safeGet<unknown[]>(entry, 1, `flights[${i}].priceInfo`);
-
-      if (!flight || !priceInfo) continue;
-
-      // Price: entry[1][0][1]
-      const priceInner = safeGet<unknown[]>(priceInfo, 0, `flights[${i}].price`);
-      const price = priceInner
-        ? (safeGet<number>(priceInner, 1, `flights[${i}].price.amount`) ?? 0)
-        : 0;
-
-      const type = safeGet<string>(flight, 0, `flights[${i}].type`) ?? "";
-      const airlines =
-        (safeGet<string[]>(flight, 1, `flights[${i}].airlines`) as string[]) ?? [];
-      const segmentsArr =
-        (safeGet<unknown[][]>(flight, 2, `flights[${i}].segments`) as unknown[][]) ?? [];
-
-      const segments: FlightSegment[] = [];
-      let totalDuration = 0;
-
-      for (let j = 0; j < segmentsArr.length; j++) {
-        const seg = parseSegment(
-          segmentsArr[j] as unknown[],
-          `flights[${i}].segments[${j}]`
-        );
-        // Assign airline from flight-level airlines list
-        if (airlines.length > 0) {
-          seg.airline = airlines[j % airlines.length] ?? airlines[0] ?? "";
-        }
-        segments.push(seg);
-        totalDuration += seg.durationMinutes;
+    for (let i = 0; i < entries.length; i++) {
+      const path = `${groupPath}[0][${i}]`;
+      try {
+        const entry = requireArray(entries[i], path);
+        const flight = requireArray(entry[0], `${path}[0]`);
+        const priceInfo = requireArray(entry[1], `${path}[1]`);
+        const priceInner = requireArray(priceInfo[0], `${path}[1][0]`);
+        const airlines = z.array(z.string()).min(1).parse(flight[1]);
+        const segmentsArr = requireArray(flight[2], `${path}[0][2]`);
+        const segments = segmentsArr.map((raw, index) => {
+          const segmentPath = `${path}[0][2][${index}]`;
+          const segment = parseSegment(requireArray(raw, segmentPath), segmentPath);
+          segment.airline = airlines[index % airlines.length];
+          return segment;
+        });
+        const extras = safeGet<unknown[]>(flight, 22, path);
+        const emission = safeGet<number>(extras, 7, path);
+        const typical = safeGet<number>(extras, 8, path);
+        const carbonEmission = typeof emission === "number" && typeof typical === "number"
+          ? { grams: emission, typicalGrams: typical }
+          : undefined;
+        results.push(flightSchema.parse({
+          type: flight[0],
+          airlines,
+          price: { amount: priceInner[1], currency: "" },
+          durationMinutes: flight[9],
+          stops: Math.max(0, segments.length - 1),
+          segments,
+          carbonEmission,
+        }));
+      } catch (error) {
+        const detail = error instanceof z.ZodError
+          ? error.issues.map(issue => `${issue.path.join(".")}: ${issue.message}`).join("; ")
+          : error instanceof Error ? error.message : String(error);
+        const failure = new ParseError(`Google Flights response structure changed at ${path} — ${detail}`);
+        firstError ??= failure;
+        process.stderr.write(`  Warning: skipped ${path}: ${detail}\n`);
       }
-
-      // Carbon emissions from extras
-      let carbonEmission: FlightResult["carbonEmission"];
-      const extras = safeGet<unknown[]>(flight, 22, `flights[${i}].extras`);
-      if (extras) {
-        const emission = safeGet<number>(extras, 7, `flights[${i}].extras.carbon`);
-        const typical = safeGet<number>(extras, 8, `flights[${i}].extras.typicalCarbon`);
-        if (emission !== undefined && typical !== undefined) {
-          carbonEmission = { grams: emission, typicalGrams: typical };
-        }
-      }
-
-      results.push({
-        type,
-        airlines,
-        price: { amount: price, currency: "" }, // currency set by caller
-        durationMinutes: totalDuration,
-        stops: Math.max(0, segments.length - 1),
-        segments,
-        carbonEmission,
-      });
-    } catch (error) {
-      // Skip individual flight parse errors, keep going
-      process.stderr.write(
-        `  Warning: skipped flight[${i}]: ${error instanceof Error ? error.message : String(error)}\n`
-      );
     }
   }
-
+  if (results.length === 0 && firstError) throw firstError;
   return results;
 }
 
@@ -209,7 +209,7 @@ function parsePayload(payload: unknown[]): FlightResult[] {
  * Parse airlines metadata from the payload.
  */
 function parseAirlinesMeta(
-  payload: unknown[]
+  payload: unknown[],
 ): Array<{ code: string; name: string }> {
   try {
     const meta = safeGet<unknown[]>(payload, 7, "payload[7]");
@@ -219,12 +219,10 @@ function parseAirlinesMeta(
     const airlinesArr = safeGet<unknown[][]>(inner, 1, "payload[7][1][1]");
     if (!airlinesArr) return [];
 
-    return airlinesArr
-      .filter(Array.isArray)
-      .map((entry) => ({
-        code: String(entry[0] ?? ""),
-        name: String(entry[1] ?? ""),
-      }));
+    return airlinesArr.filter(Array.isArray).map((entry) => ({
+      code: String(entry[0] ?? ""),
+      name: String(entry[1] ?? ""),
+    }));
   } catch {
     return [];
   }
@@ -236,12 +234,14 @@ function parseAirlinesMeta(
 export function parseFlightsHtml(
   html: string,
   query: { from: string; to: string; date: string; returnDate?: string },
-  currency: string
+  currency: string,
 ): SearchResponse {
   let payload: unknown[];
+  let flights: FlightResult[];
 
   try {
-    payload = extractJsonFromHtml(html) as unknown[];
+    payload = requireArray(extractJsonFromHtml(html), "payload");
+    flights = parsePayload(payload);
   } catch (error) {
     const debugPath = saveDebugHtml(html);
     if (error instanceof ParseError) {
@@ -251,15 +251,6 @@ export function parseFlightsHtml(
     throw error;
   }
 
-  if (!Array.isArray(payload)) {
-    const debugPath = saveDebugHtml(html);
-    throw new ParseError(
-      `Expected payload to be an array, got ${typeof payload}`,
-      debugPath
-    );
-  }
-
-  const flights = parsePayload(payload);
   // Set currency on all flights
   for (const flight of flights) {
     flight.price.currency = currency;
