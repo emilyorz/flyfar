@@ -198,10 +198,46 @@ Streams: none.
 
    - Suggested default: 留在目前工作區，符合「沿用工作區既有差異」的委託；只修改本輪必要檔案。
 
-   - ans:
+   - ans: 是，留在目前工作區，沿用既有差異；只修改 A-003 必要檔案。此決定已包含在 Sam「用 omp 進行」與 A-003 明列的「沿用工作區既有差異」授權，不需再次詢問。請繼續做到實作、驗證、fresh reviewer 與 Reply 完整交付。
 
 ---
 
 # → Ask / A-004 (emilyorz)
 
-+
++ 恢復 A-003 委託：
+
++ Sam 授權用本專案既有 omp + Agentflow 改善查票輸出。目標：1) search 結果呈現完整去程與回程班次，不再只有去程；JSON/CSV/table 契約一致且不破壞既有消費者。2) 行李資訊若 Google Flights 回應有可靠資料，就顯示可驗證的含行李總價或費用；資料拿不到時清楚標示「未含／未知」，禁止猜價。3) cheapest 與一般 search 至少能導向或展開候選的完整來回組合。4) 先凍結 fixture 與失敗測試，再修最小範圍；測試、tsc、build、實際 CLI 與至少一次真實查詢驗證。5) 用獨立 fresh reviewer 審查後才交付。沿用工作區既有差異，不丟棄、不重寫產品、不碰 Agentflow skill、Dashboard、gateway 或其他專案；不可可靠取得行李價格時，交付誠實 UX，不為此阻塞。不要開第二個 coordinator。完成寫 Reply 與證據。
+
++ 已回答的 A-003 工作位置問題（原文）：
+
++ 1. 是否留在目前工作區，沿用既有差異完成 A-003，而不建立獨立分支／worktree？
+
++    - Suggested default: 留在目前工作區，符合「沿用工作區既有差異」的委託；只修改本輪必要檔案。
+
++    - ans: 是，留在目前工作區，沿用既有差異；只修改 A-003 必要檔案。此決定已包含在 Sam「用 omp 進行」與 A-003 明列的「沿用工作區既有差異」授權，不需再次詢問。請繼續做到實作、驗證、fresh reviewer 與 Reply 完整交付。
+
+---
+
+## [RUN-001] Event — 2026-09-15 07:13:32 +0800 (A-004)
+
+- 已讀取並恢復 A-003 Questions 的完整續作授權，留在目前工作區；採 direct 主代理實作，不開第二個 coordinator。
+
+- 凍結真實去識別的來回 fixture；初始 3 項失敗後修復，25 tests 通過。新增空回程退出碼案例先失敗後修復，最後 13 項 CLI tests、tsc、build 通過。
+
+- 真實 CLI 查詢 MM 篩選得到 2 去程、6 配對回程；MM620/MM625 整組 8,232 TWD，不相加，回程抵台 2026-10-26 01:10。行李無可靠費用欄位，三種格式均標示未知。
+
+- /dev/ttys005 實際終端驗證 help/search/cheapest/multi；HTTP 使用 fixture，皆退出 0，shell 正常退出。真實查票另有直接證據，未混稱 fixture 為即時報價。
+
+- 範圍與追蹤表：.agentflow/artifacts/A-004-roundtrip/tracker.md。保留既有差異；接著凍結實作、fresh reviewer 與交付。
+
+## [WIP-001] Checkpoint — 2026-09-15 07:17:10 +0800 (A-004)
+
+- **Finished:** T-1～T-4；fixture、先失敗後修復、真實查票、CLI PTY、型別與建置均有證據。
+
+- **Running now:** 凍結已檢查的來源 commit 與 fresh reviewer 簡報。
+
+- **Still to do:** 獨立審查驗收、限定範圍推送、Reply。
+
+- **Next work action:** 提交僅本輪差異並啟動 external-runner-v1；保留既有格式差異在工作區。
+
+- [x] tracker.md | [x] devlog RUN | [x] scope matches tracker

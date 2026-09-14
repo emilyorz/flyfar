@@ -51,6 +51,62 @@ describe("CLI public contract with offline HTTP", () => {
     expect(result.queries[0].data[1]).toMatchObject({ date: "2026-10-25", maxStops: 0, airlines: ["BR"], fromAirport: { airport: "NRT" }, toAirport: { airport: "TPE" } });
   });
 
+  it("expands paired returns without adding the round-trip total twice", () => {
+    const result = cli([...search, "--return", "2026-10-25", "--json"], "roundtrip");
+    expect(result.code, result.stderr).toBe(0);
+    const outbound = JSON.parse(result.stdout).flights[0];
+    expect(outbound.segments[0].flightNumber).toBe("MM620");
+    expect(outbound.price.amount).toBe(8232);
+    expect(outbound.priceScope).toBe("round-trip-from");
+    expect(outbound.returnOptions.map((f: { price: { amount: number } }) => f.price.amount)).toEqual([8232, 8723]);
+    expect(outbound.returnOptions[0]).toMatchObject({
+      priceScope: "round-trip-total",
+      baggage: { status: "unknown" },
+      segments: [{ flightNumber: "MM625", fromAirport: { code: "NRT" }, toAirport: { code: "TPE" },
+        departure: { date: "2026-10-25", time: "21:50" }, arrival: { date: "2026-10-26", time: "01:10" } }],
+    });
+    const link = new URL(outbound.deepLink);
+    const selected = Info.toObject(Info.decode(Buffer.from(link.searchParams.get("tfs")!, "base64")));
+    expect(selected.data[0].selectedFlights).toEqual([{ fromAirport: "TPE", date: "2026-10-20", toAirport: "NRT", airline: "MM", flightNumber: "620" }]);
+    expect(selected.data[1].date).toBe("2026-10-25");
+  });
+
+  it("table and CSV expose return flight dates and unknown baggage", () => {
+    const args = [...search, "--return", "2026-10-25"];
+    const table = cli(args, "roundtrip");
+    expect(table.code, table.stderr).toBe(0);
+    expect(table.stdout).toContain("MM625");
+    expect(table.stdout).toContain("2026-10-26");
+    expect(table.stdout).toContain("行李：未知");
+    const csv = cli([...args, "--output", "csv"], "roundtrip");
+    expect(csv.code, csv.stderr).toBe(0);
+    expect(csv.stdout).toContain("MM625");
+    expect(csv.stdout).toContain("2026-10-26");
+    expect(csv.stdout).toContain("round-trip-total");
+    expect(csv.stdout).toContain("unknown");
+  });
+
+  it("cheapest links preserve both travel dates and distinguish unconfirmed baggage", () => {
+    const result = cli([...cheapest, "--stay", "5", "--json"]);
+    expect(result.code, result.stderr).toBe(0);
+    const entry = JSON.parse(result.stdout).dates[0];
+    const link = new URL(entry.deepLink);
+    const query = Info.toObject(Info.decode(Buffer.from(link.searchParams.get("tfs")!, "base64")));
+    expect(query.data.map((leg: { date: string }) => leg.date)).toEqual(["2026-10-20", "2026-10-25"]);
+    expect(entry.priceScope).toBe("round-trip-from");
+    expect(entry.baggage.status).toBe("unknown");
+  });
+
+  it("distinguishes an unavailable return from an upstream response for the wrong leg", () => {
+    const args = [...search, "--return", "2026-10-25", "--json"];
+    const empty = cli(args, "empty-return");
+    expect(empty.code, empty.stderr).toBe(1);
+    expect(JSON.parse(empty.stdout).flights.every((f: { returnOptions: unknown[] }) => f.returnOptions.length === 0)).toBe(true);
+    const wrong = cli(args, "wrong-return");
+    expect(wrong.code, wrong.stderr).toBe(2);
+    expect(wrong.stdout).toBe("");
+  });
+
   it("JSON takes precedence over CSV and table recommendation flags", () => {
     const result = cli([...search, "--json", "--recommend", "--output", "csv"]);
     expect(result.code).toBe(0);
@@ -89,7 +145,7 @@ describe("CLI public contract with offline HTTP", () => {
     for (const timezone of ["Asia/Taipei", "America/New_York"]) {
       const result = cli([...cheapest, "--stay", "5", "--json"], "flights", timezone);
       expect(result.code, result.stderr).toBe(0);
-      expect(JSON.parse(result.stdout).dates).toEqual([
+      expect(JSON.parse(result.stdout).dates).toMatchObject([
         { date: "2026-10-20", cheapestPrice: 5141, currency: "TWD", flightCount: 3 },
         { date: "2026-10-21", cheapestPrice: 5141, currency: "TWD", flightCount: 3 },
       ]);

@@ -78,6 +78,7 @@ export type TripType = "round-trip" | "one-way" | "multi-city";
 export interface FlightSegment {
   airline: string;
   flightNumber?: string;
+  airlineCode?: string;
   fromAirport: { code: string; name: string };
   toAirport: { code: string; name: string };
   departure: { date: string; time: string };
@@ -94,6 +95,10 @@ export interface FlightResult {
   stops: number;
   segments: FlightSegment[];
   carbonEmission?: { grams: number; typicalGrams: number };
+  priceScope?: "one-way" | "round-trip-from" | "round-trip-total";
+  baggage?: { status: "unknown" };
+  deepLink?: string;
+  returnOptions?: FlightResult[];
 }
 
 export interface SearchResponse {
@@ -125,6 +130,10 @@ export interface CheapestResponse {
     cheapestPrice: number;
     currency: string;
     flightCount: number;
+    returnDate?: string;
+    deepLink?: string;
+    priceScope?: FlightResult["priceScope"];
+    baggage?: FlightResult["baggage"];
   }>;
   metadata: {
     fetchedAt: string;

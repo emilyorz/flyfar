@@ -12,6 +12,8 @@ const flightSchema = z.object({
   stops: z.number().int().nonnegative(),
   segments: z.array(z.object({
     airline: z.string(),
+    airlineCode: z.string().optional(),
+    flightNumber: z.string().optional(),
     fromAirport: airportSchema,
     toAirport: airportSchema,
     departure: dateTimeSchema,
@@ -125,9 +127,14 @@ function parseSegment(segment: unknown[], path: string): FlightSegment {
   const planeType = safeGet<string>(segment, 17, `${path}.planeType`) ?? "";
   const departureDate = safeGet(segment, 20, `${path}.departureDate`);
   const arrivalDate = safeGet(segment, 21, `${path}.arrivalDate`);
+  const identity = safeGet<unknown[]>(segment, 22, `${path}.identity`);
+  const airlineCode = typeof identity?.[0] === "string" && /^[A-Z0-9]{2}$/.test(identity[0]) ? identity[0] : undefined;
+  const number = typeof identity?.[1] === "string" && /^\d+[A-Z]?$/.test(identity[1]) ? identity[1] : undefined;
 
   return {
-    airline: "", // filled by caller from flight-level data
+    airline: typeof identity?.[3] === "string" ? identity[3] : "",
+    airlineCode,
+    flightNumber: airlineCode && number ? airlineCode + number : undefined,
     fromAirport: { code: fromCode, name: fromName },
     toAirport: { code: toCode, name: toName },
     departure: {
@@ -173,7 +180,7 @@ function parsePayload(payload: unknown[]): FlightResult[] {
         const segments = segmentsArr.map((raw, index) => {
           const segmentPath = `${path}[0][2][${index}]`;
           const segment = parseSegment(requireArray(raw, segmentPath), segmentPath);
-          segment.airline = airlines[index % airlines.length];
+          if (!segment.airline) segment.airline = airlines[index % airlines.length];
           return segment;
         });
         const extras = safeGet<unknown[]>(flight, 22, path);
@@ -254,6 +261,8 @@ export function parseFlightsHtml(
   // Set currency on all flights
   for (const flight of flights) {
     flight.price.currency = currency;
+    // 尚未驗證供應商的行李費用欄位；未知不等於免費或已含。
+    flight.baggage = { status: "unknown" };
   }
 
   const airlinesMeta = parseAirlinesMeta(payload);

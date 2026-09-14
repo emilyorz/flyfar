@@ -26,6 +26,13 @@ export interface FlightLeg {
   to: string; // IATA code
   maxStops?: number;
   airlines?: string[];
+  selectedFlights?: Array<{
+    fromAirport: string;
+    date: string;
+    toAirport: string;
+    airline: string;
+    flightNumber: string;
+  }>;
 }
 
 export interface QueryParams {
@@ -71,6 +78,7 @@ export async function buildTfsParam(params: QueryParams): Promise<string> {
       date: leg.date,
       fromAirport: { airport: leg.from },
       toAirport: { airport: leg.to },
+      selectedFlights: leg.selectedFlights,
     };
     if (leg.maxStops !== undefined) {
       entry.maxStops = leg.maxStops;

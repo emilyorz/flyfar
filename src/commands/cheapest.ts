@@ -1,5 +1,5 @@
 import type { CheapestInput, CheapestResponse } from "../types.js";
-import { buildTfsParam, type QueryParams } from "../core/query.js";
+import { buildTfsParam, buildFlightsUrl, type QueryParams } from "../core/query.js";
 import { fetchFlightsHtml } from "../core/fetch.js";
 import { parseFlightsHtml } from "../core/parse.js";
 import { formatJson } from "../output/json.js";
@@ -59,7 +59,7 @@ async function fetchCheapestDate(
 
     const response = parseFlightsHtml(
       html,
-      { from: input.from, to: input.to, date },
+      { from: input.from, to: input.to, date, returnDate: input.stay ? addDays(date, input.stay) : undefined },
       input.currency,
     );
 
@@ -72,6 +72,10 @@ async function fetchCheapestDate(
       cheapestPrice: prices.length > 0 ? Math.min(...prices) : 0,
       currency: input.currency,
       flightCount: response.flights.length,
+      returnDate: input.stay ? addDays(date, input.stay) : undefined,
+      deepLink: buildFlightsUrl(tfs, input.language, input.currency),
+      priceScope: input.stay ? "round-trip-from" : "one-way",
+      baggage: { status: "unknown" },
     };
   } catch (error) {
     throw new Error(`[${date}] ${error instanceof Error ? error.message : String(error)}`, { cause: error });

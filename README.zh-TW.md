@@ -115,6 +115,22 @@ flyfar cheapest --from TPE --to NRT --range 2026-04-20 2026-04-30 --json
 
 - `--proxy` 目前雖出現在參數介面，HTTP 傳輸尚未套用代理設定；本輪未新增代理功能。
 
+### 完整來回與行李資訊
+
+- `search --return` 會為每個去程候選查詢配對回程，列出所有航段班號、出發／抵達日期與時間；跨日抵達不會混成同一天。每批最多 5 個回程查詢，總請求數為 1 加去程候選數，較單程查詢慢。
+
+- 原本的 `flights[].price`、`segments`、`durationMinutes`、`stops` 仍描述去程候選及其原始來回起價；新增 `returnOptions` 保存每個配對回程。`returnOptions[].price` 是該去程搭配該回程的**整組總價**，不是回程單價，不可再加去程價格。
+
+- `priceScope` 區分 `one-way`、`round-trip-from`、`round-trip-total`。表格中的排序／推薦仍以原有去程候選條件計算，不代表已比較全部完整來回的總時長。
+
+- `flights[].deepLink` 會開啟已選去程的回程選擇頁。`cheapest --stay` 每個日期新增 `returnDate` 與 `deepLink`，可開啟指定日期的完整來回查詢；掃描價格仍是來回起價，不是已選定組合。
+
+- 行李目前統一標示「未知」與 `baggage.status: \"unknown\"`。尚無已驗證的 Google 費用欄位，不代表免費、已含或確定未含；不提供猜測的件數、重量、費用或含行李總價。實際票種、分開購票條件與行李費用以 Google Flights／航空公司確認為準。
+
+- CSV 保留既有前 14 欄順序及每個去程候選一列，末尾新增 `price_scope`、`baggage_status`、`deep_link`、`segments`、`return_options`。最後兩欄為依 CSV 規則跳脫的 JSON，內容與 JSON 模式一致；舊 `flight_number` 欄維持原有 `type` 值，真正班號請讀 `segments[].flightNumber`。
+
+- `search --return` 全部候選無回程時以 `1` 結束，仍保留去程與空 `returnOptions` 供診斷；無可靠班號、回程查詢失敗或回應方向／日期不符時以 `2` 結束，不輸出假配對。Google 私有格式仍可能改變。
+
 ## 本機驗證與修正紀錄
 
 - `npm test`：使用去識別化 Google Flights fixture，驗證 parser、protobuf query 與實際 CLI 子程序；不需連線。
@@ -122,6 +138,8 @@ flyfar cheapest --from TPE --to NRT --range 2026-04-20 2026-04-30 --json
 - `npx tsc --noEmit && npm run build`：檢查來源型別並建置入口。`node dist/cli.js --help` 可確認程式啟動。
 
 - 2026-09-14：補回最佳航班群組，修正整點時間、含轉機等待的總時長、`cheapest --range`、時區日期偏移、錯誤退出碼、JSON 輸出優先序及 `multi --open`。
+
+- 2026-09-15：補齊已選去程的配對回程、航段班號與跨日日期；新增價格範圍、未知行李提示及 search／cheapest 候選導向。
 
 - 真實網路查票另外執行，可能受 Google 封鎖或資料結構改動影響，不作為離線測試的唯一通過條件。
 

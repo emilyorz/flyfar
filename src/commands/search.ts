@@ -86,6 +86,53 @@ export async function searchCommand(input: SearchInput): Promise<void> {
 
   const sorted = sortFlights(response.flights, input.sort as SortKey);
   const sortedResponse = { ...response, flights: sorted, deepLink };
+  for (const flight of sorted) {
+    flight.priceScope = input.return ? "round-trip-from" : "one-way";
+    flight.deepLink = deepLink;
+  }
+
+  if (input.return) {
+    // 每個回程查詢綁定確切去程，不將兩次獨立單程報價拼成來回票。
+    for (let start = 0; start < sorted.length; start += 5) {
+      await Promise.all(sorted.slice(start, start + 5).map(async (outbound) => {
+        const selectedFlights = outbound.segments.map((segment) => {
+          if (!segment.airlineCode || !segment.flightNumber) {
+            throw new Error("無可靠去程班號，無法查詢配對回程；請至 Google Flights 確認");
+          }
+          return {
+            fromAirport: segment.fromAirport.code,
+            date: segment.departure.date,
+            toAirport: segment.toAirport.code,
+            airline: segment.airlineCode,
+            flightNumber: segment.flightNumber.slice(segment.airlineCode.length),
+          };
+        });
+        const selectedTfs = await buildTfsParam({
+          ...queryParams,
+          legs: [{ ...legs[0], selectedFlights }, legs[1]],
+        });
+        outbound.deepLink = buildFlightsUrl(selectedTfs, input.language, input.currency);
+        process.stderr.write(`  Returns for ${outbound.segments.map(s => s.flightNumber).join("+")}...\n`);
+        const returnHtml = await fetchFlightsHtml({
+          tfs: selectedTfs, language: input.language, currency: input.currency, proxy: input.proxy,
+        });
+        const returns = parseFlightsHtml(returnHtml, {
+          from: input.to, to: input.from, date: input.return!,
+        }, input.currency);
+        for (const flight of returns.flights) {
+          const first = flight.segments[0];
+          const last = flight.segments[flight.segments.length - 1];
+          if (first.fromAirport.code !== input.to || last.toAirport.code !== input.from ||
+              first.departure.date !== input.return) {
+            throw new Error("Google Flights 未返回配對回程，拒絕將去程當成回程");
+          }
+          flight.priceScope = "round-trip-total";
+          flight.deepLink = outbound.deepLink;
+        }
+        outbound.returnOptions = sortFlights(returns.flights, input.sort as SortKey);
+      }));
+    }
+  }
 
   if (input.json || input.output === "json") {
     process.stdout.write(formatJson(sortedResponse) + "\n");
@@ -151,7 +198,8 @@ export async function searchCommand(input: SearchInput): Promise<void> {
   }
 
   // Exit code: 0 = flights found, 1 = no flights
-  if (response.flights.length === 0) {
+  if (response.flights.length === 0 ||
+      (input.return && response.flights.every(flight => flight.returnOptions?.length === 0))) {
     process.exitCode = 1;
   }
 }

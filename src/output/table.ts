@@ -70,12 +70,7 @@ export function formatSearchTable(response: SearchResponse): string {
 
     if (!firstSeg || !lastSeg) continue;
 
-    // Determine leg annotation for round-trip
-    let legLabel = "";
-    if (query.returnDate && firstSeg.departure.time) {
-      const segDate = firstSeg.departure.time.split(" ")[0];
-      legLabel = segDate === query.returnDate ? "Leg 2" : "Leg 1";
-    }
+    const legLabel = query.returnDate ? "Leg 1" : "";
 
     table.push([
       legLabel,
@@ -91,6 +86,24 @@ export function formatSearchTable(response: SearchResponse): string {
   }
 
   lines.push(table.toString());
+  lines.push("  行李：未知；未確認是否已含、件數或費用，以上不是已驗證的含行李總價。");
+  if (query.returnDate) {
+    lines.push("  上表為去程候選的來回起價；下列回程價格為該去程搭配回程的整組總價，請勿相加。");
+  }
+  flights.forEach((flight, index) => {
+    lines.push(`\n  候選 ${index + 1}${query.returnDate ? " 去程" : ""}`);
+    for (const segment of flight.segments) {
+      lines.push(`    ${segment.flightNumber ?? "班號未知"} ${segment.airline} ${segment.fromAirport.code} ${segment.departure.date} ${segment.departure.time} → ${segment.toAirport.code} ${segment.arrival.date} ${segment.arrival.time}`);
+    }
+    flight.returnOptions?.forEach((option, returnIndex) => {
+      lines.push(`  候選 ${index + 1} 回程 ${returnIndex + 1} — 來回總價 ${option.price.amount.toLocaleString()} ${option.price.currency}；行李：未知`);
+      for (const segment of option.segments) {
+        lines.push(`    ${segment.flightNumber ?? "班號未知"} ${segment.airline} ${segment.fromAirport.code} ${segment.departure.date} ${segment.departure.time} → ${segment.toAirport.code} ${segment.arrival.date} ${segment.arrival.time}`);
+      }
+    });
+    if (flight.returnOptions?.length === 0) lines.push("    無可用回程組合。");
+    if (flight.deepLink) lines.push(`    選擇完整組合：${flight.deepLink}`);
+  });
 
   // Summary
   const cheapest = flights
@@ -181,6 +194,11 @@ export function formatCheapestTable(response: CheapestResponse): string {
   }
 
   lines.push(table.toString());
+  lines.push("  行李：未知；價格未確認包含行李費用。");
+  if (query.stay) lines.push("  價格為來回起價；透過各日期連結選擇完整去回程組合。");
+  for (const entry of dates) {
+    if (entry.deepLink) lines.push(`  ${entry.date}${entry.returnDate ? ` → ${entry.returnDate}` : ""}：${entry.deepLink}`);
+  }
   lines.push("");
 
   return lines.join("\n");

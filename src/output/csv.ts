@@ -33,6 +33,11 @@ function flightToCsvRow(flight: FlightResult, idx: number, legLabel = ""): strin
     String(flight.price.amount),
     flight.price.currency,
     flight.segments.map((s) => s.planeType).filter(Boolean).join("; "),
+    flight.priceScope ?? "",
+    flight.baggage?.status ?? "unknown",
+    flight.deepLink ?? "",
+    JSON.stringify(flight.segments),
+    JSON.stringify(flight.returnOptions ?? []),
   ];
   return fields.map(escapeCsvField).join(",");
 }
@@ -58,18 +63,17 @@ export function formatSearchCsv(response: SearchResponse): string {
     "price_amount",
     "price_currency",
     "plane_types",
+    "price_scope",
+    "baggage_status",
+    "deep_link",
+    "segments",
+    "return_options",
   ].join(",");
 
   lines.push(header);
 
   flights.forEach((flight, i) => {
-    const firstSeg = flight.segments[0];
-    let legLabel = "";
-    if (query.returnDate && firstSeg?.departure.time) {
-      const segDate = firstSeg.departure.time.split(" ")[0];
-      legLabel = segDate === query.returnDate ? "Leg 2" : "Leg 1";
-    }
-    lines.push(flightToCsvRow(flight, i, legLabel));
+    lines.push(flightToCsvRow(flight, i, query.returnDate ? "Leg 1" : ""));
   });
 
   return lines.join("\n");
