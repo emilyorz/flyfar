@@ -1,5 +1,12 @@
 # 專案規則
 
+## AgentFlow v9 啟動與規則
+
+At session start, the owner-facing host must load and follow agentflow via supported skill discovery, honoring explicit owner opt-outs. If unavailable, report it; never assume paths or install it. Delegates follow assignments without activating agentflow.
+
+Read agentflow's `references/project-rules.md` from the resolved skill or exact host-supplied text, then `.agentflow/rules.md` if present; unavailable baseline defers shared-record writes and invariant/review acceptance. Report the gap and continue independent authorized work. Reading rules does not activate agentflow.
+
+
 ## 子代理模型
 
 - 主 session 用 `task` 派子代理時，照 `ag.json` 的 `pipeline-roles` 挑 `agent`；不要在 `task` 呼叫填 `model` 欄位（OMP 只准 `seance` agent 填，其他會回錯誤）。模型寫在 `.omp/agents/` 的 agent 檔頭，不寫在呼叫裡。

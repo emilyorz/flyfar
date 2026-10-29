@@ -1,0 +1,58 @@
+{
+  "schema-version": 13,
+  "switches": {
+    "notebook-name": "devlog.md",
+    "ag-dir": ".agentflow",
+    "use-lang": "zh-tw",
+    "omit-asker": "off",
+    "omit-run": "off",
+    "omit-wip": "off",
+    "saving-mode": "off"
+  },
+  "pipeline-roles": {
+    "requirements": "best",
+    "codewalk": "better",
+    "explore": "better",
+    "spike": "better",
+    "spec": "best",
+    "implementation": "basic",
+    "security-scan": "best",
+    "acceptance": "better",
+    "learn": "basic",
+    "threeways": "better"
+  },
+  "model-family": {
+    "pi": {
+      "best": "gpt-6-astra/medium",
+      "better": "gpt-6.1-sol/high",
+      "basic": "gpt-6.1-sol/medium",
+      "cheap": "qwen3.8-flash/high"
+    },
+    "claude": {
+      "best": "claude-opus-5-5/xhigh",
+      "better": "claude-opus-5-5/high",
+      "basic": "claude-sonnet-5-5/high",
+      "cheap": "haiku/high"
+    }
+  },
+  "external-workers": [
+    {
+      "id": "omp-default",
+      "command": [
+        "omp",
+        "-p"
+      ],
+      "priority": 5,
+      "model-family": "pi"
+    },
+    {
+      "id": "claude-default",
+      "command": [
+        "claude",
+        "-p"
+      ],
+      "priority": 2,
+      "model-family": "claude"
+    }
+  ]
+}
