@@ -1,26 +1,20 @@
 # STATUS
 
-Project: flyfar
+專案：flyfar
 
-Notebook: .agentflow/devlog.md — root.
+筆記本：.agentflow/devlog.md — 主筆記本。
 
-Current commit: 46bf3db64b378b7321723d96aa3f57d0ee1e996e.
+工作目錄：/Users/leeabc/work/emilyorz/flyfar
 
-Tests/scenarios: 25 tests 通過；新增空回程案例後 13 CLI tests、tsc、build 通過；PTY 四個入口與真實 6 組來回驗證；fresh review PASS.
+分支：main
 
-Configuration: ag.json — schema v7; validated for pi this round.
+目前：A-006 等待新委託；本輪 v9 升級完成。[既有未結工作與 HOLD 復原](artifacts/A-005-v9-migration-recovery.md) 保留原處。
 
-Proven: A-003/A-004 完整配對去回程、未知行李與候選導向已驗證，獨立審查通過.
+已證實：官方 9.1.0 與直接相關整合已採用；原生工程／自然續接／Board 合回清理已驗，兩個既有排程已啟用。[交付結果](/Users/leeabc/.hermes/artifacts/agentflow-v9-upgrade-20261028/execution/runtime-final/FINAL.md)。
 
-Open: none.
+下一步：依原範圍運作；看板每次只開一張新工程，原有 HOLD 不恢復。正式排程的後續產品卡各自驗收。
 
-Next: 等待新委託.
-
-Artifacts: .agentflow/artifacts/A-004-roundtrip/{tracker,verification,review,cross-check}.md.
-
-Archived eras: none.
-
-Streams: none.
+歷史封存：無。
 ---
 
 # → Ask / A-001 (emilyorz)
@@ -322,3 +316,50 @@ Streams: none.
 # → Ask / A-005 (emilyorz)
 
 +
+
++ 恩 我覺得 afp(agentflow) v9 + pstack 的工程驗證方法 應該會比現在好很多
+目前 v8 有點審查過頭 讓很多東西不斷地卡住 
+
++ 1. 請幫我直接升級 v9 
+2. 確保所有 skill, Process,  OMP board 用 state machine skills 也都一起更新
+3. 更新完畢後, 請幫我打開 OMP board 的兩個排程 (挑代辦任務, 自動合併)  
+
++ 以上的操作的任何權限 我都 approve, 全權給你 目標就是幫我完成上面三件事 不用再問我了 謝謝
+
+## RUN — v9 遷移
+
+- 依 Sam 已批准的完整升級範圍，由 Elena 執行；本輪不是像素或其他產品功能開發。
+
+- [授權、原狀、既有未結線索與逐步復原](artifacts/A-005-v9-migration-recovery.md)。
+
+# → 回覆 / A-005
+
+* _2026-10-29 09:31:26 +0800_
+
+1. 恩 我覺得 afp(agentflow) v9 + pstack 的工程驗證方法 應該會比現在好很多...
+
+   已改用 v9 host-owned 流程，保留 AFP 工程證據及一次比例適當的獨立結果審查，不把舊版重複關卡當作例行前提。
+
+2. 請幫我直接升級 v9
+
+   官方 9.1.0 已正式安裝，8.4.15 的可回復副本保留。
+
+3. 確保所有 skill, Process,  OMP board 用 state machine skills 也都一起更新
+
+   直接相關的載入入口、狀態機整合、專案／預設設定及操作技能已更新，並經一般工程、自然續接與 Board 合回清理實跑。[完整結果及證據界限](/Users/leeabc/.hermes/artifacts/agentflow-v9-upgrade-20261028/execution/runtime-final/FINAL.md)。
+
+4. 更新完畢後, 請幫我打開 OMP board 的兩個排程 (挑代辦任務, 自動合併)
+
+   兩個原有排程已啟用，均維持每五分鐘與原設定；名額判定已修正並由正式服務讀回為一張。原 HOLD、所有權及歷史均保留，不啟動像素工作。正式排程的後續產品卡尚不算本輪已完成的成果。
+
+5. 以上的操作的任何權限 我都 approve, 全權給你 目標就是幫我完成上面三件事 不用再問我了 謝謝
+
+   已在原授權內完成；沒有吸收 Flyfar 既有產品差異或對外發布。原待決事項保留在原卡，本輪沒有新增需你決定的問題。
+
+## 問題（批次 — 每題附建議預設）
+
+- 無。
+
+---
+
+# → 提問 / A-006 (emilyorz)
