@@ -1,0 +1,16 @@
+{ "afp_scope": 1,
+  "behaviors": [
+    { "id": "B1", "expect": "帶 --proxy 時 search 請求經代理（假代理收到 CONNECT www.google.com:443，沒有直接連線）" },
+    { "id": "B2", "expect": "回應本文在檔頭後卡住時，在設定逾時內以 Request timed out after Nms 結束" },
+    { "id": "B3", "expect": "既有測試全過，不帶 proxy 的路徑不變" }
+  ],
+  "checks": [
+    { "id": "red", "role": "red", "argv": ["node_modules/.bin/vitest","run","tests/fetch.test.ts"], "covers": ["B1","B2"],
+      "tests": ["tests/fetch.test.ts","tests/fixtures/no-direct.mjs"],
+      "cases": ["--proxy routes the search request through the proxy instead of connecting directly","a response body that stalls after the headers fails with a timeout error inside the configured limit"] },
+    { "id": "suite", "role": "regression", "argv": ["node_modules/.bin/vitest","run"], "covers": ["B1","B2","B3"], "tests": [], "watch": ["src/","tests/","package.json"] }
+  ],
+  "review": "一次獨立（不同模型家族）結果審查，對準最終 diff 與證據",
+  "exclusions": ["SOCKS／環境變數代理","新增 CLI 逾時旗標","來源報告問題 1、3","改動 src/commands、src/cli.ts、src/types.ts"],
+  "rerun": "只在失敗、src／tests／package.json 有改動時重跑回歸",
+  "stop": "RED 因缺口失敗、同 argv GREEN 通過、回歸全過、審查 PASS" }
