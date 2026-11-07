@@ -12,7 +12,7 @@
 
 已驗證: A-002 已用 flyfar CLI 實查 TPE→東京 11/28–11/30，並以 Google Flights 網頁交叉核對 HND 結果；未修改產品程式。自動合回被擋：本機 main 比遠端 main 多 3 個尚未推送的提交（143796c、ebadd60、063082f，皆為 agentflow／看板設定），非本卡造成。
 
-下一步: 不可合回。Q-002-1 已有看板多模型審查代答 B（不是 Sam 本人）：不推送 main，本卡擱置。Sam 若要推翻再回覆；本卡不自行推送 main。
+下一步: 不可合回。等 Sam 看 Q-002-2 的查票成果確認。主線未推送的 3 個提交（Q-002-1）已有看板代答 B（不是 Sam 本人）：不推送，本卡不自行推送 main；合回要等主線另行處理。
 
 封存紀錄: 無。
 
@@ -121,6 +121,30 @@ Q-002-1. 合回被官方檢查擋下：本機 main 有 3 個還沒推到遠端�
    - 建議預設值: none — owner decision required
 
    - ans: B（看板多模型審查代答，不是 Sam 本人的回答；審查報告 ar_186，兩位評審第 2 輪一致。不推送 main，本卡先不合回。）
+
+Q-002-2. 請確認查票成果：東京（成田）非廉航來回最低約 NT$14,495（國泰直飛），羽田沒有非廉航直飛（見上方摘要）。這張卡沒有改程式，只留下查票紀錄。選 Approve 表示結果可接受、本卡視為完成；是否合回仍受主線尚未上傳影響，不由這題決定，也不會因此上傳主線。選再改表示要我補查（例如別的出發日、艙等或把香港航空也排除）。
+
+   - kind: result_confirmation
+
+   - category: owner_verbatim
+
+   - plain: 查票結果這樣可以嗎？要不要補查別的條件？
+
+   - why_owner: 結果夠不夠用，只有 Sam 能判斷。
+
+   - options: Approve → 結果接受、本卡完成，合回時機等主線處理，不會自動上傳主線 | 再改 → 我依你指定的條件補查
+
+   - recommended: Approve
+
+   - reply_line: 回 Approve，或回再改並寫要改的條件
+
+   - 建議預設值: none — owner decision required
+
+   - images:
+
+     - .agentflow/artifacts/A-002/google-flights-hnd.webp — Google Flights 羽田 11/28–11/30 來回搜尋畫面，列出的航班與工具查到的一致
+
+   - ans:
 
 ---
 
