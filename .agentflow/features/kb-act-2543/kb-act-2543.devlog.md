@@ -166,3 +166,6 @@ patch sha256：9d7f79c823397e61b7c33dd310c879917d430a57b2242812b2acf388f59fdf85
 ---
 
 # → 提問 / A-003 (emilyorz)
+
++ agf merge-feature kb-act-2543 --cleanup
+
