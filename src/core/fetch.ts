@@ -1,6 +1,7 @@
 import { writeFileSync } from "fs";
 import { tmpdir } from "os";
 import path from "path";
+import { ProxyAgent } from "undici";
 
 const FLIGHTS_URL = "https://www.google.com/travel/flights/search";
 const TIMEOUT_MS = 15_000;
@@ -33,6 +34,7 @@ export interface FetchOptions {
   language: string;
   currency: string;
   proxy?: string;
+  timeoutMs?: number;
 }
 
 function sleep(ms: number): Promise<void> {
@@ -52,49 +54,59 @@ export async function fetchFlightsHtml(options: FetchOptions): Promise<string> {
   url.searchParams.set("hl", options.language);
   url.searchParams.set("curr", options.currency);
 
+  const timeoutMs = options.timeoutMs ?? TIMEOUT_MS;
+  // Built once so an invalid proxy URL fails immediately instead of after three retries.
+  const proxyAgent = options.proxy ? new ProxyAgent(options.proxy) : undefined;
   let lastError: Error | null = null;
 
-  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
-    if (attempt > 0) {
-      const delay = BASE_DELAY_MS * Math.pow(2, attempt - 1);
-      process.stderr.write(
-        `  Retry ${attempt}/${MAX_RETRIES - 1} after ${delay}ms...\n`
-      );
-      await sleep(delay);
-    }
-
-    try {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS);
-
-      const response = await fetch(url.toString(), {
-        headers: BROWSER_HEADERS,
-        signal: controller.signal,
-        redirect: "follow",
-      });
-
-      clearTimeout(timeout);
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      const html = await response.text();
-
-      if (html.length < 1000) {
-        throw new Error(
-          `Response too short (${html.length} bytes) — likely blocked by Google`
+  try {
+    for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+      if (attempt > 0) {
+        const delay = BASE_DELAY_MS * Math.pow(2, attempt - 1);
+        process.stderr.write(
+          `  Retry ${attempt}/${MAX_RETRIES - 1} after ${delay}ms...\n`
         );
+        await sleep(delay);
       }
 
-      return html;
-    } catch (error) {
-      lastError =
-        error instanceof Error ? error : new Error(String(error));
-      process.stderr.write(
-        `  Fetch attempt ${attempt + 1} failed: ${lastError.message}\n`
-      );
+      // One timer covers connecting, headers and the body download.
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+      try {
+        const response = await fetch(url.toString(), {
+          headers: BROWSER_HEADERS,
+          signal: controller.signal,
+          redirect: "follow",
+          ...(proxyAgent && { dispatcher: proxyAgent }),
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const html = await response.text();
+
+        if (html.length < 1000) {
+          throw new Error(
+            `Response too short (${html.length} bytes) — likely blocked by Google`
+          );
+        }
+
+        return html;
+      } catch (error) {
+        lastError = controller.signal.aborted
+          ? new Error(`Request timed out after ${timeoutMs}ms`)
+          : error instanceof Error ? error : new Error(String(error));
+        process.stderr.write(
+          `  Fetch attempt ${attempt + 1} failed: ${lastError.message}\n`
+        );
+      } finally {
+        clearTimeout(timeout);
+      }
     }
+  } finally {
+    await proxyAgent?.destroy();
   }
 
   throw new Error(

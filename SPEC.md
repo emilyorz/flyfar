@@ -153,11 +153,11 @@ flyfar cheapest --from TPE --to NRT --range 2026-04-20 2026-04-30 --json
 
 ### Fetch Layer
 
-- `undici` or native `fetch` for HTTP
+- native `fetch` for HTTP; `undici` `ProxyAgent` for `--proxy`
 - Browser impersonation via TLS fingerprint (same approach as primp in Python)
 - Retry: 3 attempts, exponential backoff (1s, 2s, 4s)
-- Timeout: 15s per request
-- Optional proxy support (`--proxy`)
+- Timeout: 15s per request, covering connect, headers and response body download
+- Optional HTTP proxy support (`--proxy <url>`), applied to every flights request
 
 ### Parse Layer
 
